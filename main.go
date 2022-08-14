@@ -6,54 +6,53 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"artist"`
-	Price  float64 `json:"price"`
+type Message struct {
+	ID   string `json:"id"`
+	User string `json:"User"`
+	Text string `json:"Text"`
 }
 
-var albums = []album{
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
+var messages = []Message{
+	{ID: "1", User: "Garfield", Text: "Meow"},
+	{ID: "2", User: "Pirate", Text: "I'm not happy:("},
+	{ID: "3", User: "Pirate", Text: "Where is my food?"},
 }
 
 // postAlbums adds an album from JSON received in the request body.
-func postAlbums(c *gin.Context) {
-	var newAlbum album
+func postMessages(c *gin.Context) {
+	var newMessage Message
 
 	// Call BindJSON to bind the received JSON to
 	// newAlbum.
-	if err := c.BindJSON(&newAlbum); err != nil {
+	if err := c.BindJSON(&newMessage); err != nil {
 		return
 	}
 
 	// Add the new album to the slice.
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
+	messages = append(messages, newMessage)
+	c.IndentedJSON(http.StatusCreated, newMessage)
 }
-func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
+func getMessages(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, messages)
 }
-func getAlbumByID(c *gin.Context) {
+func getMessageByID(c *gin.Context) {
 	id := c.Param("id")
 
 	// Loop over the list of albums, looking for
 	// an album whose ID value matches the parameter.
-	for _, a := range albums {
+	for _, a := range messages {
 		if a.ID == id {
 			c.IndentedJSON(http.StatusOK, a)
 			return
 		}
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "message not found"})
 }
 func main() {
 	router := gin.Default()
-	router.GET("/albums", getAlbums)
-	router.GET("/albums/:id", getAlbumByID)
-	router.POST("/albums", postAlbums)
+	router.GET("/message", getMessages)
+	router.GET("/message/:id", getMessageByID)
+	router.POST("/messages", postMessages)
 
 	router.Run("localhost:8080")
 }
