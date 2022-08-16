@@ -1,9 +1,9 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
 func postMessages(c *gin.Context) {
@@ -22,7 +22,10 @@ func getUsers(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, users)
 }
 func getMessageByID(c *gin.Context) {
-	id := c.Param("id")
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		return
+	}
 
 	for _, a := range messages {
 		if a.ID == id {
@@ -33,8 +36,10 @@ func getMessageByID(c *gin.Context) {
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "message not found"})
 }
 func getUserByID(c *gin.Context) {
-	id := c.Param("id")
-
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		return
+	}
 	for _, a := range users {
 		if a.ID == id {
 			c.IndentedJSON(http.StatusOK, a)
@@ -44,14 +49,17 @@ func getUserByID(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
 }
+
 func main() {
 	router := gin.Default()
+	router.POST("/login", Login)
+
 	router.GET("/message", getMessages)
 	router.GET("/message/:id", getMessageByID)
 	router.POST("/messages", postMessages)
 
 	router.GET("/user", getUsers)
 	router.GET("/user/:id", getUserByID)
-
+	router.POST("/user/signup", signup)
 	router.Run("localhost:8080")
 }
