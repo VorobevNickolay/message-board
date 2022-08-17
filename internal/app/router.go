@@ -2,11 +2,9 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
-	"message-board/internal/pkg/jwt"
 	"message-board/internal/pkg/message"
 	"message-board/internal/pkg/user"
 	"net/http"
-	"strconv"
 )
 
 type messageStore interface {
@@ -14,26 +12,32 @@ type messageStore interface {
 	FindMessageById(id string) (message.Message, error)
 	GetMessages() ([]*message.Message, error)
 }
+
+type userStore interface {
+	AddUser(user user.User) (user.User, error)
+	FindUserById(id string) (user.User, error)
+	GetUsers() ([]*user.User, error)
+}
 type Router struct {
 	ginContext   *gin.Engine
 	messageStore messageStore
+	userStore    userStore
 }
 
-func NewRouter(messageStore messageStore) *Router {
-	return &Router{gin.Default(), messageStore}
+func NewRouter(messageStore messageStore, userStore userStore) *Router {
+	return &Router{gin.Default(), messageStore, userStore}
 }
 
 func (r *Router) SetUpRouter() {
-	r.ginContext.POST("/login", login)
+	//r.ginContext.POST("/login", login)
 
 	r.ginContext.GET("/messages", r.getMessages)
 	r.ginContext.GET("/message/:id", r.getMessageByID)
 	r.ginContext.POST("/message", r.postMessage)
 
-	r.ginContext.GET("/users", getUsers)
-	r.ginContext.GET("/user/:id", getUserByID)
-
-	r.ginContext.GET("/user/online", usersOnline)
+	r.ginContext.GET("/users", r.getUsers)
+	r.ginContext.GET("/user/:id", r.getUserByID)
+	r.ginContext.POST("/user", r.signUp)
 
 }
 func (r *Router) Run() {
@@ -53,8 +57,9 @@ func (r *Router) getMessages(c *gin.Context) {
 	messages, _ := r.messageStore.GetMessages()
 	c.IndentedJSON(http.StatusOK, messages)
 }
-func getUsers(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, user.Users)
+func (r *Router) getUsers(c *gin.Context) {
+	users, _ := r.userStore.GetUsers()
+	c.IndentedJSON(http.StatusOK, users)
 }
 func (r *Router) getMessageByID(c *gin.Context) {
 	id := c.Param("id")
@@ -67,25 +72,19 @@ func (r *Router) getMessageByID(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, m)
 }
-func getUserByID(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return
-	}
+func (r *Router) getUserByID(c *gin.Context) {
+	id := c.Param("id")
 
-	u, err := user.FindUserById(id)
+	u, err := r.userStore.FindUserById(id)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
 		return
 	}
 
 	c.IndentedJSON(http.StatusOK, u)
+}
 
-}
-func usersOnline(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, user.OnlineUsers)
-}
-func login(c *gin.Context) {
+/*func login(c *gin.Context) {
 	var u user.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
@@ -103,12 +102,14 @@ func login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, token)
-}
-func signUp(c *gin.Context) {
+} */
+func (r *Router) signUp(c *gin.Context) {
 	var newUser user.User
 	if err := c.BindJSON(&newUser); err != nil {
 		return
 	}
-	user.AddUser(&newUser)
-	c.IndentedJSON(http.StatusCreated, newUser)
+	//Todo: add error handler
+	u, _ := r.userStore.AddUser(newUser)
+
+	c.IndentedJSON(http.StatusCreated, u)
 }

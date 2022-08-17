@@ -2,32 +2,34 @@ package user
 
 import (
 	"errors"
+	"github.com/google/uuid"
 )
 
-var Users = []User{
-	{ID: 1, Username: "Garfield", Password: "Orange123"},
-	{ID: 2, Username: "Pirate", Password: "QuartoChampion"},
-}
-var OnlineUsers []User
-
-func AddUser(newUser *User) {
-	newUser.ID = uint64(len(Users)) + 1
-	Users = append(Users, *newUser)
+type InMemoryStore struct {
+	users map[string]User
 }
 
-func LoginUser(u User) bool {
-	for _, user := range Users {
-		if user.Username == u.Username && user.Password == u.Password {
-			return true
-		}
-	}
-	return false
+func NewInMemoryStore() *InMemoryStore {
+	return &InMemoryStore{make(map[string]User)}
 }
-func FindUserById(id uint64) (*User, error) {
-	for _, a := range Users {
-		if a.ID == id {
-			return &a, nil
-		}
+
+func (store *InMemoryStore) AddUser(user User) (User, error) {
+	user.ID = uuid.NewString()
+	store.users[user.ID] = user
+	return user, nil
+}
+func (store *InMemoryStore) FindUserById(id string) (User, error) {
+	if m, ok := store.users[id]; ok {
+		return m, nil
 	}
-	return nil, errors.New("user was not found")
+	return User{}, errors.New("message was not found")
+}
+func (store *InMemoryStore) GetUsers() ([]*User, error) {
+	res := make([]*User, len(store.users))
+	i := 0
+	for _, m := range store.users {
+		res[i] = &m
+		i++
+	}
+	return res, nil
 }
