@@ -1,7 +1,8 @@
-package main
+package app
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"message-board/Internal/pkg/user"
 	"os"
 	"time"
 )
@@ -16,6 +17,7 @@ func CreateToken(userid uint64) (string, error) {
 	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token, err := at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
+	user.OnlineUsers = append(user.OnlineUsers, user.Users[userid-1])
 	if err != nil {
 		return "", err
 	}

@@ -1,16 +1,17 @@
-package main
+package app
 
 import (
 	"github.com/gin-gonic/gin"
+	"message-board/Internal/pkg/user"
 	"net/http"
 )
 
 func signup(c *gin.Context) {
-	var newUser User
+	var newUser user.User
 	if err := c.BindJSON(&newUser); err != nil {
 		return
 	}
-	newUser.ID = users[len(users)-1].ID + 1
-	users = append(users, newUser)
+	newUser.ID = uint64(len(user.Users)) + 1
+	user.Users = append(user.Users, newUser)
 	c.IndentedJSON(http.StatusCreated, newUser)
 }

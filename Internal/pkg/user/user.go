@@ -1,4 +1,4 @@
-package main
+package user
 
 type User struct {
 	ID       uint64 `json:"id"`
@@ -6,7 +6,8 @@ type User struct {
 	Password string `json:"password"`
 }
 
-var users = []User{
+var Users = []User{
 	{ID: 1, Username: "Garfield", Password: "Orange123"},
 	{ID: 2, Username: "Pirate", Password: "QuartoChampion"},
 }
+var OnlineUsers []User
