@@ -6,23 +6,20 @@ import (
 	"net/http"
 )
 
-func Login(c *gin.Context) {
+func login(c *gin.Context) {
 	var u user.User
+
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
 		return
 	}
-	for _, user := range user.Users {
-		if user.Username == u.Username && user.Password == u.Password {
-			token, err := CreateToken(user.ID)
-			if err != nil {
-				c.JSON(http.StatusUnprocessableEntity, err.Error())
-				return
-			}
-			c.JSON(http.StatusOK, token)
-			return
-		}
+
+	token, err := user.LoginUser(u)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err)
+		return
 	}
-	c.JSON(http.StatusUnauthorized, "Wrong login or password")
-	return
+
+	c.JSON(http.StatusOK, token)
 }

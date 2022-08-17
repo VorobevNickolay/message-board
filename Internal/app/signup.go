@@ -6,12 +6,11 @@ import (
 	"net/http"
 )
 
-func signup(c *gin.Context) {
+func signUp(c *gin.Context) {
 	var newUser user.User
 	if err := c.BindJSON(&newUser); err != nil {
 		return
 	}
-	newUser.ID = uint64(len(user.Users)) + 1
-	user.Users = append(user.Users, newUser)
+	user.AddUser(newUser)
 	c.IndentedJSON(http.StatusCreated, newUser)
 }

@@ -17,7 +17,7 @@ func NewRouter() *Router {
 }
 
 func (r *Router) SetUpRouter() {
-	r.ginContext.POST("/login", Login)
+	r.ginContext.POST("/login", login)
 
 	r.ginContext.GET("/message", getMessages)
 	r.ginContext.GET("/message/:id", getMessageByID)
@@ -25,7 +25,7 @@ func (r *Router) SetUpRouter() {
 
 	r.ginContext.GET("/user", getUsers)
 	r.ginContext.GET("/user/:id", getUserByID)
-	r.ginContext.POST("/user/signup", signup)
+	r.ginContext.POST("/user/signup", signUp)
 	r.ginContext.GET("/user/online", usersOnline)
 	r.ginContext.Run("localhost:8080")
 }
@@ -72,4 +72,7 @@ func getUserByID(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
+}
+func usersOnline(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, user.OnlineUsers)
 }
