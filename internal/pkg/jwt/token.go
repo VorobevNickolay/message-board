@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"message-board/Internal/pkg/user"
+	"message-board/internal/pkg/user"
 	"os"
 	"time"
 )
