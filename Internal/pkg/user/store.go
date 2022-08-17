@@ -2,7 +2,6 @@ package user
 
 import (
 	"errors"
-	"message-board/Internal/app"
 )
 
 var Users = []User{
@@ -11,17 +10,24 @@ var Users = []User{
 }
 var OnlineUsers []User
 
-func AddUser(newUser User) {
+func AddUser(newUser *User) {
 	newUser.ID = uint64(len(Users)) + 1
-	Users = append(Users, newUser)
+	Users = append(Users, *newUser)
 }
 
-func LoginUser(u User) (string, error) {
+func LoginUser(u User) bool {
 	for _, user := range Users {
 		if user.Username == u.Username && user.Password == u.Password {
-			token, err := app.CreateToken(user.ID)
-			return token, err
+			return true
 		}
 	}
-	return "", errors.New("Wrong login or password")
+	return false
+}
+func FindUserById(id uint64) (*User, error) {
+	for _, a := range Users {
+		if a.ID == id {
+			return &a, nil
+		}
+	}
+	return nil, errors.New("user was not found")
 }

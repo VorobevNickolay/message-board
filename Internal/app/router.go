@@ -36,7 +36,8 @@ func postMessages(c *gin.Context) {
 		return
 	}
 
-	message.Messages = append(message.Messages, newMessage)
+	message.AddMessage(newMessage)
+
 	c.IndentedJSON(http.StatusCreated, newMessage)
 }
 func getMessages(c *gin.Context) {
@@ -51,27 +52,28 @@ func getMessageByID(c *gin.Context) {
 		return
 	}
 
-	for _, a := range message.Messages {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
-		}
+	m, err := message.FindMessageById(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "message not found"})
+		return
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "message not found"})
+
+	c.IndentedJSON(http.StatusOK, m)
 }
 func getUserByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		return
 	}
-	for _, a := range user.Users {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
-		}
+
+	u, err := user.FindUserById(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		return
 	}
 
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
+	c.IndentedJSON(http.StatusOK, u)
+
 }
 func usersOnline(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, user.OnlineUsers)

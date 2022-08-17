@@ -11,6 +11,6 @@ func signUp(c *gin.Context) {
 	if err := c.BindJSON(&newUser); err != nil {
 		return
 	}
-	user.AddUser(newUser)
+	user.AddUser(&newUser)
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
