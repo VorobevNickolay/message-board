@@ -46,15 +46,22 @@ func (r *Router) Run() {
 func (r *Router) postMessage(c *gin.Context) {
 	var newMessage message.Message
 	if err := c.BindJSON(&newMessage); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, "add message error")
 		return
 	}
-	//Todo: add error handler
-	m, _ := r.messageStore.AddMessage(newMessage)
-
+	m, err := r.messageStore.AddMessage(newMessage)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, "add message error")
+		return
+	}
 	c.IndentedJSON(http.StatusCreated, m)
 }
 func (r *Router) getMessages(c *gin.Context) {
-	messages, _ := r.messageStore.GetMessages()
+	messages, err := r.messageStore.GetMessages()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, "get messages error")
+		return
+	}
 	c.IndentedJSON(http.StatusOK, messages)
 }
 func (r *Router) getUsers(c *gin.Context) {
@@ -108,8 +115,11 @@ func (r *Router) signUp(c *gin.Context) {
 	if err := c.BindJSON(&newUser); err != nil {
 		return
 	}
-	//Todo: add error handler
-	u, _ := r.userStore.AddUser(newUser)
+	u, err := r.userStore.AddUser(newUser)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, "add user error")
+		return
+	}
 
 	c.IndentedJSON(http.StatusCreated, u)
 }
