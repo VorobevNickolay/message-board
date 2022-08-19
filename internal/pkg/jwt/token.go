@@ -2,12 +2,11 @@ package jwt
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"message-board/internal/pkg/user"
 	"os"
 	"time"
 )
 
-func CreateToken(userid uint64) (string, error) {
+func CreateToken(userid string) (string, error) {
 	var err error
 	//Creating Access Token
 	os.Setenv("ACCESS_SECRET", "jdnfksdmfksd") //this should be in an env file
@@ -17,7 +16,6 @@ func CreateToken(userid uint64) (string, error) {
 	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token, err := at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
-	user.OnlineUsers = append(user.OnlineUsers, user.Users[userid-1])
 	if err != nil {
 		return "", err
 	}

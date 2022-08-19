@@ -2,9 +2,12 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
+	"message-board/internal/pkg/jwt"
 	"message-board/internal/pkg/message"
 	"message-board/internal/pkg/user"
 	"net/http"
+	"strings"
 )
 
 type messageStore interface {
@@ -17,6 +20,7 @@ type userStore interface {
 	AddUser(user user.User) (user.User, error)
 	FindUserById(id string) (user.User, error)
 	GetUsers() ([]*user.User, error)
+	FindUserByName(name string) (user.User, error)
 }
 type Router struct {
 	ginContext   *gin.Engine
@@ -38,6 +42,7 @@ func (r *Router) SetUpRouter() {
 	r.ginContext.GET("/users", r.getUsers)
 	r.ginContext.GET("/user/:id", r.getUserByID)
 	r.ginContext.POST("/user", r.signUp)
+	r.ginContext.POST("/user/login", r.login)
 
 }
 func (r *Router) Run() {
@@ -46,27 +51,27 @@ func (r *Router) Run() {
 func (r *Router) postMessage(c *gin.Context) {
 	var newMessage message.Message
 	if err := c.BindJSON(&newMessage); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, "add message error")
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add message error"})
 		return
 	}
 	m, err := r.messageStore.AddMessage(newMessage)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, "add message error")
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add message error"})
 		return
 	}
-	c.IndentedJSON(http.StatusCreated, m)
+	c.IndentedJSON(http.StatusCreated, gin.H{"id": m.ID, "text": m.Text})
 }
 func (r *Router) getMessages(c *gin.Context) {
 	messages, err := r.messageStore.GetMessages()
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, "get messages error")
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "get messages error"})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, messages)
+	c.IndentedJSON(http.StatusOK, gin.H{"messages": messages})
 }
 func (r *Router) getUsers(c *gin.Context) {
 	users, _ := r.userStore.GetUsers()
-	c.IndentedJSON(http.StatusOK, users)
+	c.IndentedJSON(http.StatusOK, gin.H{"users": users})
 }
 func (r *Router) getMessageByID(c *gin.Context) {
 	id := c.Param("id")
@@ -88,38 +93,58 @@ func (r *Router) getUserByID(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, u)
+	c.IndentedJSON(http.StatusOK, gin.H{"id": u.ID, "username": u.Username})
 }
 
-/*func login(c *gin.Context) {
+func (r *Router) login(c *gin.Context) {
 	var u user.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Invalid json provided"})
 		return
 	}
-	isUserFound := user.LoginUser(u)
-	if !isUserFound {
-		c.JSON(http.StatusUnauthorized, "wrong login or password")
-	}
-	token, err := jwt.CreateToken(u.ID)
+	password := u.Password
+	u, err := r.userStore.FindUserByName(u.Username)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "wrong login or password"})
 		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "wrong login or password"})
+		return
+
 	}
 
-	c.JSON(http.StatusOK, token)
-} */
+	token, err := jwt.CreateToken(u.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token})
+
+}
 func (r *Router) signUp(c *gin.Context) {
 	var newUser user.User
 	if err := c.BindJSON(&newUser); err != nil {
 		return
 	}
-	u, err := r.userStore.AddUser(newUser)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, "add user error")
+
+	if len(newUser.Password) == 0 {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "password can't be empty"})
 		return
 	}
-
-	c.IndentedJSON(http.StatusCreated, u)
+	newUser.Password = createHash(newUser.Password)
+	newUser.Username = strings.ToLower(newUser.Username)
+	u, err := r.userStore.AddUser(newUser)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add user error"})
+		return
+	}
+	//todo: add validator
+	c.IndentedJSON(http.StatusCreated, gin.H{"username": u.Username})
+}
+func createHash(s string) string {
+	bytePassword := []byte(s)
+	hashPassword, _ := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
+	return string(hashPassword)
 }
