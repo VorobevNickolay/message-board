@@ -5,33 +5,33 @@ import (
 	"github.com/google/uuid"
 )
 
-var errMessageNotFound = errors.New("message was not found")
+var ErrMessageNotFound = errors.New("message was not found")
 
 type InMemoryStore struct {
-	messages map[string]Message
+	messages   []*Message
+	messageIDs map[string]int
 }
 
 func NewInMemoryStore() *InMemoryStore {
-	return &InMemoryStore{make(map[string]Message)}
+	return &InMemoryStore{
+		messages:   make([]*Message, 0),
+		messageIDs: make(map[string]int),
+	}
 }
 
-func (store *InMemoryStore) AddMessage(message Message) (Message, error) {
+func (store *InMemoryStore) CreateMessage(message Message) (Message, error) {
 	message.ID = uuid.NewString()
-	store.messages[message.ID] = message
+	store.messages = append(store.messages, &message)
+	store.messageIDs[message.ID] = len(store.messages) - 1
 	return message, nil
 }
+
 func (store *InMemoryStore) FindMessageById(id string) (Message, error) {
-	if m, ok := store.messages[id]; ok {
-		return m, nil
+	if m, ok := store.messageIDs[id]; ok {
+		return *store.messages[m], nil
 	}
-	return Message{}, errMessageNotFound
+	return Message{}, ErrMessageNotFound
 }
 func (store *InMemoryStore) GetMessages() ([]*Message, error) {
-	res := make([]*Message, len(store.messages))
-	i := 0
-	for _, m := range store.messages {
-		res[i] = &m
-		i++
-	}
-	return res, nil
+	return store.messages, nil
 }
