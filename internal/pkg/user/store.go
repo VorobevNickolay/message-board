@@ -51,3 +51,9 @@ func (store *InMemoryStore) FindUserByName(name string) (User, error) {
 	}
 	return User{}, ErrUserNotFound
 }
+func (store *InMemoryStore) UserModelById(id string) UserModel {
+	var um UserModel
+	um.ID = id
+	um.Username = store.users[id].Username
+	return um
+}

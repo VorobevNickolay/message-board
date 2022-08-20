@@ -21,11 +21,16 @@ type userStore interface {
 	FindUserById(id string) (user.User, error)
 	GetUsers() ([]*user.User, error)
 	FindUserByName(name string) (user.User, error)
+	UserModelById(id string) user.UserModel
 }
 type Router struct {
 	ginContext   *gin.Engine
 	messageStore messageStore
 	userStore    userStore
+}
+
+type ErrorJson struct {
+	error string `json:"error"`
 }
 
 func NewRouter(messageStore messageStore, userStore userStore) *Router {
@@ -59,7 +64,7 @@ func (r *Router) postMessage(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add message error"})
 		return
 	}
-	c.IndentedJSON(http.StatusCreated, gin.H{"id": m.ID, "text": m.Text})
+	c.IndentedJSON(http.StatusCreated, m)
 }
 func (r *Router) getMessages(c *gin.Context) {
 	messages, err := r.messageStore.GetMessages()
@@ -89,43 +94,44 @@ func (r *Router) getUserByID(c *gin.Context) {
 
 	u, err := r.userStore.FindUserById(id)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, gin.H{"id": u.ID, "username": u.Username})
+	um := r.userStore.UserModelById(u.ID)
+	c.IndentedJSON(http.StatusOK, um)
 }
 
 func (r *Router) login(c *gin.Context) {
 	var u user.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Invalid json provided"})
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return
 	}
 	password := u.Password
 	u, err := r.userStore.FindUserByName(u.Username)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "wrong login or password"})
+		c.JSON(http.StatusNotFound, gin.H{"error": err})
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "wrong login or password"})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 
 	}
 
 	token, err := jwt.CreateToken(u.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, token)
 
 }
 func (r *Router) signUp(c *gin.Context) {
 	var newUser user.User
 	if err := c.BindJSON(&newUser); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -137,11 +143,12 @@ func (r *Router) signUp(c *gin.Context) {
 	newUser.Username = strings.ToLower(newUser.Username)
 	u, err := r.userStore.AddUser(newUser)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add user error"})
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	//todo: add validator
-	c.IndentedJSON(http.StatusCreated, gin.H{"username": u.Username})
+	um := r.userStore.UserModelById(u.ID)
+	c.IndentedJSON(http.StatusCreated, um)
 }
 func createHash(s string) string {
 	bytePassword := []byte(s)
