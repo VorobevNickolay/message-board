@@ -36,6 +36,7 @@ func (store *InMemoryStore) CreateUser(name, password string) (User, error) {
 	store.users[user.ID] = user
 	return user, nil
 }
+
 func (store *InMemoryStore) FindUserById(id string) (User, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -45,16 +46,20 @@ func (store *InMemoryStore) FindUserById(id string) (User, error) {
 	}
 	return User{}, ErrUserNotFound
 }
+func createPointer(u User) *User {
+	return &u
+}
 func (store *InMemoryStore) GetUsers() ([]*User, error) {
 	store.RLock()
 	defer store.RUnlock()
-
 	res := make([]*User, len(store.users))
 	i := 0
-	for _, m := range store.users {
-		res[i] = &m
+
+	for j := range store.users {
+		res[i] = createPointer(store.users[j])
 		i++
 	}
+
 	return res, nil
 }
 
