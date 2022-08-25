@@ -9,6 +9,10 @@ import (
 	"net/http"
 )
 
+var ErrAddMessage = errors.New("message was not added")
+var ErrGetMessage = errors.New("get message error")
+var ErrEmptyPassword = errors.New("empty password")
+
 type messageStore interface {
 	CreateMessage(message message.Message) (message.Message, error)
 	FindMessageById(id string) (message.Message, error)
@@ -50,12 +54,12 @@ func (r *Router) Run() {
 func (r *Router) postMessage(c *gin.Context) {
 	var newMessage message.Message
 	if err := c.BindJSON(&newMessage); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add message error"})
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrAddMessage.Error()})
 		return
 	}
 	m, err := r.messageStore.CreateMessage(newMessage)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "add message error"})
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrAddMessage.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, m)
@@ -63,21 +67,21 @@ func (r *Router) postMessage(c *gin.Context) {
 func (r *Router) getMessages(c *gin.Context) {
 	messages, err := r.messageStore.GetMessages()
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "get messages error"})
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrGetMessage.Error()})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, gin.H{"messages": messages})
+	c.IndentedJSON(http.StatusOK, messages)
 }
 func (r *Router) getUsers(c *gin.Context) {
 	users, _ := r.userStore.GetUsers()
-	c.IndentedJSON(http.StatusOK, gin.H{"users": users})
+	c.IndentedJSON(http.StatusOK, users)
 }
 func (r *Router) getMessageByID(c *gin.Context) {
 	id := c.Param("id")
 
 	m, err := r.messageStore.FindMessageById(id)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "message not found"})
+		c.IndentedJSON(http.StatusNotFound, ErrorModel{message.ErrMessageNotFound.Error()})
 		return
 	}
 
@@ -85,7 +89,6 @@ func (r *Router) getMessageByID(c *gin.Context) {
 }
 func (r *Router) getUserByID(c *gin.Context) {
 	id := c.Param("id")
-	//todo: error handle with json
 	//todo: logger
 	u, err := r.userStore.FindUserById(id)
 	if err != nil {
@@ -103,7 +106,7 @@ func (r *Router) login(c *gin.Context) {
 	var u user.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnprocessableEntity, ErrorModel{err.Error()})
 		return
 	}
 	u, err := r.userStore.FindUserByNameAndPassword(u.Username, u.Password)
@@ -131,7 +134,7 @@ func (r *Router) signUp(c *gin.Context) {
 	}
 
 	if len(newUser.Password) == 0 {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "password can't be empty"})
+		c.IndentedJSON(http.StatusBadRequest, ErrorModel{ErrEmptyPassword.Error()})
 		return
 	}
 	u, err := r.userStore.CreateUser(newUser.Username, newUser.Password)

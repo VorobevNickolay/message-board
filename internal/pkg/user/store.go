@@ -11,7 +11,6 @@ import (
 var ErrUserNotFound = errors.New("user was not found")
 var ErrUsedUsername = errors.New("username already in use")
 
-//ToDo: unit test
 type InMemoryStore struct {
 	sync.RWMutex
 	users map[string]User
