@@ -9,8 +9,6 @@ import (
 	"net/http"
 )
 
-var ErrAddMessage = errors.New("message was not added")
-var ErrGetMessage = errors.New("get message error")
 var ErrEmptyPassword = errors.New("empty password")
 
 type messageStore interface {
@@ -49,17 +47,17 @@ func (r *Router) SetUpRouter() {
 
 }
 func (r *Router) Run() {
-	r.ginContext.Run("localhost:8080")
+	_ = r.ginContext.Run("localhost:8080")
 }
 func (r *Router) postMessage(c *gin.Context) {
 	var newMessage message.Message
 	if err := c.BindJSON(&newMessage); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrAddMessage.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
 	m, err := r.messageStore.CreateMessage(newMessage)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrAddMessage.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, m)
@@ -67,15 +65,17 @@ func (r *Router) postMessage(c *gin.Context) {
 func (r *Router) getMessages(c *gin.Context) {
 	messages, err := r.messageStore.GetMessages()
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrGetMessage.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusOK, messages)
 }
+
 func (r *Router) getUsers(c *gin.Context) {
 	users, _ := r.userStore.GetUsers()
 	c.IndentedJSON(http.StatusOK, users)
 }
+
 func (r *Router) getMessageByID(c *gin.Context) {
 	id := c.Param("id")
 
@@ -87,6 +87,7 @@ func (r *Router) getMessageByID(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, m)
 }
+
 func (r *Router) getUserByID(c *gin.Context) {
 	id := c.Param("id")
 	//todo: logger
@@ -124,8 +125,9 @@ func (r *Router) login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, TokenModel{Token: token})
+	c.JSON(http.StatusOK, TokenModel{token})
 }
+
 func (r *Router) signUp(c *gin.Context) {
 	var newUser user.User
 	if err := c.BindJSON(&newUser); err != nil {

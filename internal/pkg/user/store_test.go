@@ -31,8 +31,8 @@ func TestGetUsers(t *testing.T) {
 			require.Equal(t, exp1, *actual[0])
 			require.Equal(t, exp2, *actual[1])
 		} else {
-			require.Equal(t, &exp1, *actual[1])
-			require.Equal(t, &exp2, *actual[0])
+			require.Equal(t, exp1, *actual[1])
+			require.Equal(t, exp2, *actual[0])
 		}
 	})
 }
