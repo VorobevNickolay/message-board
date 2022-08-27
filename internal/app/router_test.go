@@ -15,7 +15,7 @@ import (
 func TestGetMessages(t *testing.T) {
 	t.Run("should be empty", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/messages", r.getMessages)
+		r.SetUpRouter()
 
 		req, _ := http.NewRequest("GET", "/messages", nil)
 		w := httptest.NewRecorder()
@@ -29,7 +29,7 @@ func TestGetMessages(t *testing.T) {
 	})
 	t.Run("should return messages", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/messages", r.getMessages)
+		r.SetUpRouter()
 		var m = message.Message{
 			UserId: "1",
 			Text:   "123123",
@@ -56,7 +56,7 @@ func TestGetMessages(t *testing.T) {
 func TestGetMessageById(t *testing.T) {
 	t.Run("should return message", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/message/:id", r.getMessageByID)
+		r.SetUpRouter()
 		var m = message.Message{
 			UserId: "1",
 			Text:   "123123",
@@ -78,7 +78,7 @@ func TestGetMessageById(t *testing.T) {
 	})
 	t.Run("should return errorMessageNotFound", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/message/:id", r.getMessageByID)
+		r.SetUpRouter()
 		var m = message.Message{
 			UserId: "1",
 			Text:   "123123",
@@ -102,7 +102,7 @@ func TestGetMessageById(t *testing.T) {
 func TestPostMessage(t *testing.T) {
 	t.Run("message created", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.POST("/message", r.postMessage)
+		r.SetUpRouter()
 		var m = message.Message{
 			UserId: "1",
 			Text:   "123123",
@@ -123,7 +123,7 @@ func TestPostMessage(t *testing.T) {
 func TestGetUsers(t *testing.T) {
 	t.Run("should be empty", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/users", r.getUsers)
+		r.SetUpRouter()
 
 		req, _ := http.NewRequest("GET", "/users", nil)
 		w := httptest.NewRecorder()
@@ -137,7 +137,7 @@ func TestGetUsers(t *testing.T) {
 	})
 	t.Run("should return users", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/users", r.getUsers)
+		r.SetUpRouter()
 
 		var u = user.User{
 			Username: uuid.NewString(),
@@ -166,7 +166,7 @@ func TestGetUsers(t *testing.T) {
 func TestGetUserById(t *testing.T) {
 	t.Run("should return user", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/user/:id", r.getUserByID)
+		r.SetUpRouter()
 
 		var u = user.User{
 			Username: uuid.NewString(),
@@ -189,7 +189,7 @@ func TestGetUserById(t *testing.T) {
 	})
 	t.Run("should return errorUserNotFound", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.GET("/user/:id", r.getUserByID)
+		r.SetUpRouter()
 
 		var u = user.User{
 			Username: uuid.NewString(),
@@ -214,7 +214,7 @@ func TestGetUserById(t *testing.T) {
 func TestSignUp(t *testing.T) {
 	t.Run("user created", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.POST("/user", r.signUp)
+		r.SetUpRouter()
 		var u = user.User{
 			Username: uuid.NewString(),
 			Password: uuid.NewString(),
@@ -231,7 +231,7 @@ func TestSignUp(t *testing.T) {
 	})
 	t.Run("return errEmptyPassword", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.POST("/user", r.signUp)
+		r.SetUpRouter()
 		var u = user.User{
 			Username: uuid.NewString(),
 			Password: "",
@@ -248,7 +248,7 @@ func TestSignUp(t *testing.T) {
 	})
 	t.Run("return errUsedUserName", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.ginContext.POST("/user", r.signUp)
+		r.SetUpRouter()
 		username := uuid.NewString()
 		r.userStore.CreateUser(username, uuid.NewString())
 		var u = user.User{
