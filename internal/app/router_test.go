@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"message-board/internal/pkg/message"
@@ -12,47 +13,103 @@ import (
 	"testing"
 )
 
-func TestGetMessages(t *testing.T) {
-	t.Run("should be empty", func(t *testing.T) {
-		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.SetUpRouter()
-
-		req, _ := http.NewRequest("GET", "/messages", nil)
-		w := httptest.NewRecorder()
-		r.ginContext.ServeHTTP(w, req)
-
-		var messages []message.Message
-		json.Unmarshal(w.Body.Bytes(), &messages)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Empty(t, messages)
-	})
-	t.Run("should return messages", func(t *testing.T) {
-		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
-		r.SetUpRouter()
-		var m = message.Message{
-			UserId: "1",
-			Text:   "123123",
-		}
-		var m1 = message.Message{
-			UserId: "2",
-			Text:   "Hi",
-		}
-		m, _ = r.messageStore.CreateMessage(m)
-		m1, _ = r.messageStore.CreateMessage(m1)
-		req, _ := http.NewRequest("GET", "/messages", nil)
-		w := httptest.NewRecorder()
-		r.ginContext.ServeHTTP(w, req)
-
-		var messages []message.Message
-		json.Unmarshal(w.Body.Bytes(), &messages)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, 2, len(messages))
-		assert.Equal(t, m, messages[0])
-		assert.Equal(t, m1, messages[1])
-	})
+type messageStoreMock struct {
+	CreateMessageFunc   func(message message.Message) (message.Message, error)
+	FindMessageByIdFunc func(id string) (message.Message, error)
+	GetMessagesFunc     func() ([]*message.Message, error)
 }
+
+func (m *messageStoreMock) CreateMessage(message message.Message) (message.Message, error) {
+	return m.CreateMessageFunc(message)
+}
+
+func (m *messageStoreMock) FindMessageById(id string) (message.Message, error) {
+	return m.FindMessageByIdFunc(id)
+}
+
+func (m *messageStoreMock) GetMessages() ([]*message.Message, error) {
+	return m.GetMessagesFunc()
+}
+
+func TestGetMessages(t *testing.T) {
+	tests := []struct {
+		name             string
+		messageStore     messageStoreMock
+		expectedCode     int
+		expectedMessages *[]message.Message
+		expectedError    *ErrorModel
+	}{
+		{
+			name: "should return empty array",
+			messageStore: messageStoreMock{
+				GetMessagesFunc: func() ([]*message.Message, error) {
+					return []*message.Message{}, nil
+				},
+			},
+			expectedCode:     http.StatusOK,
+			expectedMessages: &[]message.Message{},
+		},
+		{
+			name: "should return error if GetMessages fails",
+			messageStore: messageStoreMock{
+				GetMessagesFunc: func() ([]*message.Message, error) {
+					return []*message.Message{}, errors.New("GetMessages error")
+				},
+			},
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: &ErrorModel{"GetMessages error"},
+		},
+		{
+			name: "should return messages",
+			messageStore: messageStoreMock{
+				GetMessagesFunc: func() ([]*message.Message, error) {
+					return []*message.Message{
+						{ID: "ID1", UserId: "User1", Text: "Text1"},
+						{ID: "ID2", UserId: "User2", Text: "Text2"},
+					}, nil
+				},
+			},
+			expectedCode: http.StatusOK,
+			expectedMessages: &[]message.Message{
+				{ID: "ID1", UserId: "User1", Text: "Text1"},
+				{ID: "ID2", UserId: "User2", Text: "Text2"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewRouter(&tt.messageStore, nil)
+			r.SetUpRouter()
+
+			req, _ := http.NewRequest("GET", "/messages", nil)
+			w := httptest.NewRecorder()
+			r.ginContext.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedCode, w.Code)
+
+			if tt.expectedMessages != nil {
+				var messages []message.Message
+				err := json.Unmarshal(w.Body.Bytes(), &messages)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.expectedMessages, &messages)
+			}
+
+			if tt.expectedError != nil {
+				var errorModel ErrorModel
+				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.expectedError, &errorModel)
+			}
+		})
+	}
+}
+
+//ToDo: other tests for router
+//ToDO: handle errors
 func TestGetMessageById(t *testing.T) {
 	t.Run("should return message", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
