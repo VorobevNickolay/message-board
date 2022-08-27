@@ -3,6 +3,7 @@ package jwt
 import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
+	"time"
 )
 
 var mySigningKey = []byte("BlaBlaBla123")
@@ -17,7 +18,7 @@ func CreateToken(userid string) (string, error) {
 	claims := UserClaims{
 		userid,
 		jwt.StandardClaims{
-			ExpiresAt: 15000,
+			ExpiresAt: time.Now().Add(10 * time.Minute).Unix(),
 			Issuer:    "test",
 		},
 	}

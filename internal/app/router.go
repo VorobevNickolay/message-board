@@ -34,18 +34,17 @@ func NewRouter(messageStore messageStore, userStore userStore) *Router {
 }
 
 func (r *Router) SetUpRouter() {
-	//r.ginContext.POST("/login", login)
-
 	r.ginContext.GET("/messages", r.getMessages)
 	r.ginContext.GET("/message/:id", r.getMessageByID)
-	r.ginContext.POST("/message", r.postMessage)
+	r.ginContext.POST("/message", AuthMiddleware(), r.postMessage)
 
 	r.ginContext.GET("/users", r.getUsers)
 	r.ginContext.GET("/user/:id", r.getUserByID)
 	r.ginContext.POST("/user", r.signUp)
 	r.ginContext.POST("/user/login", r.login)
-
 }
+
+//Todo: Lint
 func (r *Router) Run() {
 	_ = r.ginContext.Run("localhost:8080")
 }
@@ -55,6 +54,8 @@ func (r *Router) postMessage(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
+	newMessage.UserId = c.GetString("userId")
+	//todo: message validation
 	m, err := r.messageStore.CreateMessage(newMessage)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
