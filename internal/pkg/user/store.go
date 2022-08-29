@@ -10,6 +10,7 @@ import (
 
 var ErrUserNotFound = errors.New("user was not found")
 var ErrUsedUsername = errors.New("username already in use")
+var ErrEmptyPassword = errors.New("empty password or username")
 
 type InMemoryStore struct {
 	sync.RWMutex
@@ -24,6 +25,9 @@ func (store *InMemoryStore) CreateUser(name, password string) (User, error) {
 	store.Lock()
 	defer store.Unlock()
 
+	if len(password) == 0 || len(name) == 0 {
+		return User{}, ErrEmptyPassword
+	}
 	if _, err := store.findUserByName(name); err == nil {
 		return User{}, ErrUsedUsername
 	}

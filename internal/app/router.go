@@ -9,12 +9,14 @@ import (
 	"net/http"
 )
 
-var ErrEmptyPassword = errors.New("empty password")
+var ErrNoAccess = errors.New("you have no access for this action")
 
 type messageStore interface {
 	CreateMessage(message message.Message) (message.Message, error)
 	FindMessageById(id string) (message.Message, error)
 	GetMessages() ([]*message.Message, error)
+	UpdateMessage(id, text string) (message.Message, error)
+	DeleteMessage(id string) error
 }
 
 type userStore interface {
@@ -37,14 +39,17 @@ func (r *Router) SetUpRouter() {
 	r.ginContext.GET("/messages", r.getMessages)
 	r.ginContext.GET("/message/:id", r.getMessageByID)
 	r.ginContext.POST("/message", AuthMiddleware(), r.postMessage)
+	r.ginContext.PUT("/message/:id", AuthMiddleware(), r.updateMessage)
+	r.ginContext.DELETE("/message/:id", AuthMiddleware(), r.deleteMessage)
 
+	//todo updateMessage and deleteMessage
 	r.ginContext.GET("/users", r.getUsers)
 	r.ginContext.GET("/user/:id", r.getUserByID)
 	r.ginContext.POST("/user", r.signUp)
 	r.ginContext.POST("/user/login", r.login)
 }
 
-//Todo: Lint
+// Todo: Lint
 func (r *Router) Run() {
 	_ = r.ginContext.Run("localhost:8080")
 }
@@ -54,8 +59,8 @@ func (r *Router) postMessage(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
+
 	newMessage.UserId = c.GetString("userId")
-	//todo: message validation
 	m, err := r.messageStore.CreateMessage(newMessage)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
@@ -63,6 +68,57 @@ func (r *Router) postMessage(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusCreated, m)
 }
+
+func (r *Router) updateMessage(c *gin.Context) {
+	id := c.Param("id")
+	userId := c.GetString("userId")
+	oldMessage, err := r.messageStore.FindMessageById(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
+		return
+	}
+
+	if oldMessage.UserId != userId {
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrNoAccess.Error()})
+	}
+
+	var newMessage message.Message
+	if err := c.BindJSON(&newMessage); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
+		return
+	}
+	m, err := r.messageStore.UpdateMessage(id, newMessage.Text)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, ErrorModel{err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, m)
+}
+
+func (r *Router) deleteMessage(c *gin.Context) {
+	id := c.Param("id")
+	userId := c.GetString("userId")
+	oldMessage, err := r.messageStore.FindMessageById(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
+		return
+	}
+
+	if oldMessage.UserId != userId {
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{ErrNoAccess.Error()})
+		return
+	}
+
+	err = r.messageStore.DeleteMessage(id)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, ErrorModel{err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusAccepted, gin.H{"message": "message successfully deleted"})
+}
+
 func (r *Router) getMessages(c *gin.Context) {
 	messages, err := r.messageStore.GetMessages()
 	if err != nil {
@@ -91,7 +147,6 @@ func (r *Router) getMessageByID(c *gin.Context) {
 
 func (r *Router) getUserByID(c *gin.Context) {
 	id := c.Param("id")
-	//todo: logger
 	u, err := r.userStore.FindUserById(id)
 	if err != nil {
 		if errors.Is(err, user.ErrUserNotFound) {
@@ -136,15 +191,10 @@ func (r *Router) signUp(c *gin.Context) {
 		return
 	}
 
-	if len(newUser.Password) == 0 {
-		c.IndentedJSON(http.StatusBadRequest, ErrorModel{ErrEmptyPassword.Error()})
-		return
-	}
 	u, err := r.userStore.CreateUser(newUser.Username, newUser.Password)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
 		return
 	}
-	//todo: add validator
 	c.IndentedJSON(http.StatusCreated, userModelFromUser(u))
 }

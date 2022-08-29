@@ -17,6 +17,8 @@ type messageStoreMock struct {
 	CreateMessageFunc   func(message message.Message) (message.Message, error)
 	FindMessageByIdFunc func(id string) (message.Message, error)
 	GetMessagesFunc     func() ([]*message.Message, error)
+	UpdateMessageFunc   func(id, text string) (message.Message, error)
+	DeleteMessageFunc   func(id string) error
 }
 
 func (m *messageStoreMock) CreateMessage(message message.Message) (message.Message, error) {
@@ -29,6 +31,12 @@ func (m *messageStoreMock) FindMessageById(id string) (message.Message, error) {
 
 func (m *messageStoreMock) GetMessages() ([]*message.Message, error) {
 	return m.GetMessagesFunc()
+}
+func (m *messageStoreMock) UpdateMessage(id, text string) (message.Message, error) {
+	return m.UpdateMessageFunc(id, text)
+}
+func (m *messageStoreMock) DeleteMessage(id string) error {
+	return m.DeleteMessage(id)
 }
 
 func TestGetMessages(t *testing.T) {
@@ -156,6 +164,8 @@ func TestGetMessageById(t *testing.T) {
 		assert.Equal(t, ErrorModel{message.ErrMessageNotFound.Error()}, actual)
 	})
 }
+
+//todo: fix postMessage test
 func TestPostMessage(t *testing.T) {
 	t.Run("message created", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
@@ -301,7 +311,7 @@ func TestSignUp(t *testing.T) {
 		var actual ErrorModel
 		json.Unmarshal(w.Body.Bytes(), &actual)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, ErrorModel{ErrEmptyPassword.Error()}, actual)
+		assert.Equal(t, ErrorModel{user.ErrEmptyPassword.Error()}, actual)
 	})
 	t.Run("return errUsedUserName", func(t *testing.T) {
 		r := NewRouter(message.NewInMemoryStore(), user.NewInMemoryStore())
