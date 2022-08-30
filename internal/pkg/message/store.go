@@ -36,6 +36,7 @@ func (store *InMemoryStore) FindMessageById(id string) (Message, error) {
 	}
 	return Message{}, ErrMessageNotFound
 }
+
 func (store *InMemoryStore) GetMessages() ([]*Message, error) {
 	return store.messages, nil
 }

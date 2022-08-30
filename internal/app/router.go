@@ -38,21 +38,23 @@ func NewRouter(messageStore messageStore, userStore userStore) *Router {
 func (r *Router) SetUpRouter() {
 	r.ginContext.GET("/messages", r.getMessages)
 	r.ginContext.GET("/message/:id", r.getMessageByID)
+
 	r.ginContext.POST("/message", AuthMiddleware(), r.postMessage)
 	r.ginContext.PUT("/message/:id", AuthMiddleware(), r.updateMessage)
 	r.ginContext.DELETE("/message/:id", AuthMiddleware(), r.deleteMessage)
 
-	//todo updateMessage and deleteMessage
 	r.ginContext.GET("/users", r.getUsers)
 	r.ginContext.GET("/user/:id", r.getUserByID)
 	r.ginContext.POST("/user", r.signUp)
 	r.ginContext.POST("/user/login", r.login)
 }
 
-// Todo: Lint
+//todo: lint
+
 func (r *Router) Run() {
 	_ = r.ginContext.Run("localhost:8080")
 }
+
 func (r *Router) postMessage(c *gin.Context) {
 	var newMessage message.Message
 	if err := c.BindJSON(&newMessage); err != nil {
@@ -129,7 +131,11 @@ func (r *Router) getMessages(c *gin.Context) {
 }
 
 func (r *Router) getUsers(c *gin.Context) {
-	users, _ := r.userStore.GetUsers()
+	users, err := r.userStore.GetUsers()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, ErrorModel{err.Error()})
+		return
+	}
 	c.IndentedJSON(http.StatusOK, users)
 }
 
@@ -138,7 +144,7 @@ func (r *Router) getMessageByID(c *gin.Context) {
 
 	m, err := r.messageStore.FindMessageById(id)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, ErrorModel{message.ErrMessageNotFound.Error()})
+		c.IndentedJSON(http.StatusNotFound, ErrorModel{err.Error()})
 		return
 	}
 

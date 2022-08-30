@@ -44,14 +44,16 @@ func (store *InMemoryStore) FindUserById(id string) (User, error) {
 	store.RLock()
 	defer store.RUnlock()
 
-	if m, ok := store.users[id]; ok {
-		return m, nil
+	if u, ok := store.users[id]; ok {
+		return u, nil
 	}
 	return User{}, ErrUserNotFound
 }
+
 func createPointer(u User) *User {
 	return &u
 }
+
 func (store *InMemoryStore) GetUsers() ([]*User, error) {
 	store.RLock()
 	defer store.RUnlock()
@@ -89,6 +91,7 @@ func (store *InMemoryStore) FindUserByNameAndPassword(name, password string) (Us
 	}
 	return u, nil
 }
+
 func createHash(s string) string {
 	bytePassword := []byte(s)
 	hashPassword, _ := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
