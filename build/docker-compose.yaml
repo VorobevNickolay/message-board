@@ -1,0 +1,11 @@
+version: "3"
+services:
+  postgres:
+    image: postgres:14
+    ports:
+      - "15432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: message-board
+      POSTGRES_USER: vorobevna

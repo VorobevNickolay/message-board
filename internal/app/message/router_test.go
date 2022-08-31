@@ -1,6 +1,7 @@
 package message
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -21,23 +22,23 @@ type messageStoreMock struct {
 	DeleteMessageFunc   func(id string) error
 }
 
-func (m *messageStoreMock) CreateMessage(message message.Message) (message.Message, error) {
+func (m *messageStoreMock) CreateMessage(_ context.Context, message message.Message) (message.Message, error) {
 	return m.CreateMessageFunc(message)
 }
 
-func (m *messageStoreMock) FindMessageById(id string) (message.Message, error) {
+func (m *messageStoreMock) FindMessageById(_ context.Context, id string) (message.Message, error) {
 	return m.FindMessageByIdFunc(id)
 }
 
-func (m *messageStoreMock) GetMessages() ([]*message.Message, error) {
+func (m *messageStoreMock) GetMessages(_ context.Context) ([]*message.Message, error) {
 	return m.GetMessagesFunc()
 }
 
-func (m *messageStoreMock) UpdateMessage(id, text string) (message.Message, error) {
+func (m *messageStoreMock) UpdateMessage(_ context.Context, id, text string) (message.Message, error) {
 	return m.UpdateMessageFunc(id, text)
 }
 
-func (m *messageStoreMock) DeleteMessage(id string) error {
+func (m *messageStoreMock) DeleteMessage(_ context.Context, id string) error {
 	return m.DeleteMessageFunc(id)
 }
 

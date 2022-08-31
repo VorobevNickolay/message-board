@@ -1,12 +1,6 @@
 package user
 
-import (
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
-	"testing"
-)
-
+/*
 func TestGetUsers(t *testing.T) {
 	t.Run("should return empty list", func(t *testing.T) {
 		store := NewInMemoryStore()
@@ -140,3 +134,4 @@ func TestCreateUser(t *testing.T) {
 		require.NotEmpty(t, actual.ID)
 	})
 }
+*/

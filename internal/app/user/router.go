@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"message-board/internal/app"
@@ -15,10 +16,10 @@ type UserModel struct {
 }
 
 type userStore interface {
-	CreateUser(name, password string) (userpkg.User, error)
-	FindUserById(id string) (userpkg.User, error)
-	FindUserByNameAndPassword(name, password string) (userpkg.User, error)
-	GetUsers() ([]*userpkg.User, error)
+	CreateUser(ctx context.Context, name, password string) (userpkg.User, error)
+	FindUserById(ctx context.Context, id string) (userpkg.User, error)
+	FindUserByNameAndPassword(ctx context.Context, name, password string) (userpkg.User, error)
+	GetUsers(ctx context.Context) ([]*userpkg.User, error)
 }
 type Router struct {
 	store userStore
@@ -36,7 +37,7 @@ func (r *Router) SetUpRouter(engine *gin.Engine) {
 }
 
 func (r *Router) getUsers(c *gin.Context) {
-	users, err := r.store.GetUsers()
+	users, err := r.store.GetUsers(c)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
@@ -46,7 +47,7 @@ func (r *Router) getUsers(c *gin.Context) {
 
 func (r *Router) getUserByID(c *gin.Context) {
 	id := c.Param("id")
-	u, err := r.store.FindUserById(id)
+	u, err := r.store.FindUserById(c, id)
 	if err != nil {
 		if errors.Is(err, userpkg.ErrUserNotFound) {
 			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{err.Error()})
@@ -65,7 +66,7 @@ func (r *Router) login(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, app.ErrorModel{err.Error()})
 		return
 	}
-	u, err := r.store.FindUserByNameAndPassword(u.Username, u.Password)
+	u, err := r.store.FindUserByNameAndPassword(c, u.Username, u.Password)
 	if err != nil {
 		if errors.Is(err, userpkg.ErrUserNotFound) {
 			c.JSON(http.StatusNotFound, app.ErrorModel{err.Error()})
@@ -89,7 +90,7 @@ func (r *Router) signUp(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, app.ErrorModel{err.Error()})
 		return
 	}
-	u, err := r.store.CreateUser(newUser.Username, newUser.Password)
+	u, err := r.store.CreateUser(c, newUser.Username, newUser.Password)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{err.Error()})
 		return
