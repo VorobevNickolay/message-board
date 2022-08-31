@@ -119,7 +119,7 @@ func TestGetMessages(t *testing.T) {
 	}
 }
 
-//ToDo:  test postMessage,updateMessage, deleteMessage
+// ToDo:  test postMessage,updateMessage, deleteMessage
 func TestGetMessageByID(t *testing.T) {
 	tests := []struct {
 		name            string
