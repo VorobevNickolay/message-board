@@ -2,6 +2,7 @@ package user
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -21,19 +22,19 @@ type userStoreMock struct {
 	GetUsersFunc                  func() ([]*user.User, error)
 }
 
-func (u *userStoreMock) CreateUser(name, password string) (user.User, error) {
+func (u *userStoreMock) CreateUser(_ context.Context, name, password string) (user.User, error) {
 	return u.CreateUserFunc(name, password)
 }
 
-func (u *userStoreMock) FindUserById(id string) (user.User, error) {
+func (u *userStoreMock) FindUserById(_ context.Context, id string) (user.User, error) {
 	return u.FindUserByIdFunc(id)
 }
 
-func (u *userStoreMock) FindUserByNameAndPassword(name, password string) (user.User, error) {
+func (u *userStoreMock) FindUserByNameAndPassword(_ context.Context, name, password string) (user.User, error) {
 	return u.FindUserByNameAndPasswordFunc(name, password)
 }
 
-func (u *userStoreMock) GetUsers() ([]*user.User, error) {
+func (u *userStoreMock) GetUsers(_ context.Context) ([]*user.User, error) {
 	return u.GetUsersFunc()
 }
 
