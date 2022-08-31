@@ -1,4 +1,4 @@
-package app
+package user
 
 import "message-board/internal/pkg/user"
 
