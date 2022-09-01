@@ -25,8 +25,6 @@ func (r *Router) SetUpRouter() {
 	}
 }
 
-//todo: lint
-
 func (r *Router) Run() {
 	_ = r.ginContext.Run("localhost:8080")
 }
