@@ -50,7 +50,7 @@ func (r *Router) getUserByID(c *gin.Context) {
 	u, err := r.store.FindUserById(c, id)
 	if err != nil {
 		if errors.Is(err, userpkg.ErrUserNotFound) {
-			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{err.Error()})
+			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
 		} else {
 			c.IndentedJSON(http.StatusInternalServerError, app.UnknownError)
 		}
@@ -63,13 +63,13 @@ func (r *Router) login(c *gin.Context) {
 	var u userpkg.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, app.ErrorModel{err.Error()})
+		c.JSON(http.StatusUnprocessableEntity, app.ErrorModel{Error: err.Error()})
 		return
 	}
 	u, err := r.store.FindUserByNameAndPassword(c, u.Username, u.Password)
 	if err != nil {
 		if errors.Is(err, userpkg.ErrUserNotFound) {
-			c.JSON(http.StatusNotFound, app.ErrorModel{err.Error()})
+			c.JSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
 		} else {
 			c.JSON(http.StatusInternalServerError, app.UnknownError)
 		}
@@ -78,21 +78,21 @@ func (r *Router) login(c *gin.Context) {
 
 	token, err := jwt.CreateToken(u.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, app.ErrorModel{err.Error()})
+		c.JSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, app.TokenModel{token})
+	c.JSON(http.StatusOK, app.TokenModel{Token: token})
 }
 
 func (r *Router) signUp(c *gin.Context) {
 	var newUser userpkg.User
 	if err := c.BindJSON(&newUser); err != nil {
-		c.JSON(http.StatusInternalServerError, app.ErrorModel{err.Error()})
+		c.JSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
 	}
 	u, err := r.store.CreateUser(c, newUser.Username, newUser.Password)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, userModelFromUser(u))

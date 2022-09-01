@@ -110,6 +110,6 @@ func (suite *postgresStoreTestSuite) AfterTest(_, _ string) {
 	suite.truncateTable("users")
 }
 func (suite *postgresStoreTestSuite) truncateTable(tableName string) {
-	_, err := suite.pool.Exec(context.Background(), "TRUNCATE TABLE "+tableName+";")
+	_, err := suite.pool.Exec(context.Background(), "TRUNCATE TABLE"+" "+tableName+";")
 	suite.Require().NoError(err)
 }

@@ -34,6 +34,7 @@ func (store *inMemoryStore) CreateMessage(_ context.Context, message Message) (M
 }
 
 func (store *inMemoryStore) FindMessageById(_ context.Context, id string) (Message, error) {
+
 	if m, ok := store.messageIDs[id]; ok {
 		return *store.messages[m], nil
 	}
@@ -49,7 +50,8 @@ func (store *inMemoryStore) DeleteMessage(_ context.Context, id string) error {
 	if !ok {
 		return ErrMessageNotFound
 	}
-	store.messages[messageId] = nil
+	store.messages = append(store.messages[:messageId], store.messages[(messageId+1):]...)
+	delete(store.messageIDs, id)
 	return nil
 }
 

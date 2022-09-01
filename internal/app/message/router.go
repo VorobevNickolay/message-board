@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+type MessageModel struct {
+	username string `json:"username"`
+	text     string `json:"text"`
+}
+
 type messageStore interface {
 	CreateMessage(ctx context.Context, message messagepkg.Message) (messagepkg.Message, error)
 	FindMessageById(ctx context.Context, id string) (messagepkg.Message, error)
