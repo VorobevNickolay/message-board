@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE TABLE IF NOT EXISTS messages (
     id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId TEXT NOT NULL UNIQUE,
+    userId TEXT NOT NULL,
     text TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
