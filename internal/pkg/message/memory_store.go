@@ -2,14 +2,10 @@ package message
 
 import (
 	"context"
-	"errors"
 	"github.com/google/uuid"
 )
 
 var _ Store = (*inMemoryStore)(nil)
-
-var ErrMessageNotFound = errors.New("message was not found")
-var ErrEmptyMessage = errors.New("empty message text")
 
 type inMemoryStore struct {
 	messages   []*Message

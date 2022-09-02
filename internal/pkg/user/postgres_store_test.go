@@ -29,14 +29,22 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_CreateUser() {
 		suite.NotEmpty(user.ID)
 		suite.Equal(name, user.Username)
 	})
-	suite.Run("should return error", func() {
+	suite.Run("should return errUsedUsername", func() {
 		name := uuid.NewString()
 		password := uuid.NewString()
-
 		user, err := suite.store.CreateUser(suite.ctx, name, password)
 		suite.Require().NoError(err)
-		suite.NotEmpty(user.ID)
-		suite.Equal(name, user.Username)
+		suite.Require().NotEmpty(user)
+		user, err = suite.store.CreateUser(suite.ctx, name, password)
+		suite.Require().Error(err, ErrUsedUsername)
+		suite.Empty(user)
+	})
+	suite.Run("should return errEmptyPassword", func() {
+		name := ""
+		password := ""
+		user, err := suite.store.CreateUser(suite.ctx, name, password)
+		suite.Require().Error(err, ErrEmptyPassword)
+		suite.Empty(user)
 	})
 }
 func (suite *postgresStoreTestSuite) TestPostgresStore_GetUsers() {
@@ -45,7 +53,7 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_GetUsers() {
 		suite.Require().NoError(err)
 		suite.Empty(users)
 	})
-	suite.Run("should return user", func() {
+	suite.Run("should return users", func() {
 
 		user1, _ := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
 		user2, _ := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
@@ -60,18 +68,26 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserById() {
 		name := uuid.NewString()
 		password := uuid.NewString()
 
-		user, _ := suite.store.CreateUser(suite.ctx, name, password)
-		suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		user, err := suite.store.CreateUser(suite.ctx, name, password)
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(user)
+		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
 		actualUser, err := suite.store.FindUserById(suite.ctx, user.ID)
 		suite.Require().NoError(err)
 		suite.Equal(user, actualUser)
 	})
 	suite.Run("should return error", func() {
-		suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
+		u, err = suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
 		actualUser, err := suite.store.FindUserById(suite.ctx, uuid.NewString())
 
-		suite.Require().Error(err)
+		suite.Require().EqualError(err, ErrUserNotFound.Error())
 		suite.Empty(actualUser)
 	})
 }
@@ -82,17 +98,23 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserByNameAndPassword
 		password := uuid.NewString()
 
 		user, _ := suite.store.CreateUser(suite.ctx, name, password)
-		suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
 		actualUser, err := suite.store.FindUserByNameAndPassword(suite.ctx, user.Username, password)
 		suite.Require().NoError(err)
 		suite.Equal(user, actualUser)
 	})
 	suite.Run("should return error", func() {
-		suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
+		u, err = suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
 		actualUser, err := suite.store.FindUserByNameAndPassword(suite.ctx, uuid.NewString(), uuid.NewString())
 
-		suite.Require().Error(err)
+		suite.Require().EqualError(err, ErrUserNotFound.Error())
 		suite.Empty(actualUser)
 	})
 }

@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
@@ -10,10 +9,6 @@ import (
 )
 
 var _ Store = (*inMemoryStore)(nil)
-
-var ErrUserNotFound = errors.New("user was not found")
-var ErrUsedUsername = errors.New("username already in use")
-var ErrEmptyPassword = errors.New("empty password or username")
 
 type inMemoryStore struct {
 	sync.RWMutex
