@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -59,7 +60,7 @@ func (s *postgresStore) FindUserById(ctx context.Context, id string) (User, erro
 	var user User
 	err := row.Scan(userToPointerArray(&user)...)
 	if err != nil {
-		if err.Error() == ErrNoRows.Error() {
+		if errors.Is(err, ErrNoRows) {
 			return User{}, ErrUserNotFound
 		}
 		return User{}, fmt.Errorf("failed to select user from db %w", err)
@@ -73,7 +74,7 @@ func (s *postgresStore) findUserByName(ctx context.Context, name string) (User, 
 	var user User
 	err := row.Scan(userToPointerArray(&user)...)
 	if err != nil {
-		if err.Error() == ErrNoRows.Error() {
+		if errors.Is(err, ErrNoRows) {
 			return User{}, ErrUserNotFound
 		}
 		return User{}, fmt.Errorf("failed to select users from db %w", err)
