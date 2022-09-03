@@ -14,7 +14,7 @@ type postgresStore struct {
 	pool *pgxpool.Pool
 }
 
-func newPostgresStore(pool *pgxpool.Pool) Store {
+func NewPostgresStore(pool *pgxpool.Pool) Store {
 	return &postgresStore{pool}
 }
 

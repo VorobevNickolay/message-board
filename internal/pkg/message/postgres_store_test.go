@@ -171,7 +171,7 @@ func (suite *postgresStoreTestSuite) SetupTest() {
 	dbPool, err := pgxpool.Connect(context.Background(), databaseUrl)
 	suite.Require().NoError(err)
 	suite.pool = dbPool
-	suite.store = newPostgresStore(dbPool)
+	suite.store = NewPostgresStore(dbPool)
 }
 func (suite *postgresStoreTestSuite) AfterTest(_, _ string) {
 	suite.truncateTable("messages")
