@@ -10,11 +10,6 @@ import (
 	"net/http"
 )
 
-type UserModel struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-}
-
 type userStore interface {
 	CreateUser(ctx context.Context, name, password string) (userpkg.User, error)
 	FindUserById(ctx context.Context, id string) (userpkg.User, error)
