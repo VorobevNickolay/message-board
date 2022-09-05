@@ -61,14 +61,14 @@ func TestGetMessages(t *testing.T) {
 			expectedMessages: &[]message.Message{},
 		},
 		{
-			name: "should return error if GetMessages fails",
+			name: "should return errDataBase",
 			messageStore: messageStoreMock{
 				GetMessagesFunc: func() ([]*message.Message, error) {
-					return []*message.Message{}, errors.New("GetMessages error")
+					return []*message.Message{}, errors.New("something wrong with db")
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: "GetMessages error"},
+			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name: "should return messages",
@@ -131,16 +131,28 @@ func TestGetMessageByID(t *testing.T) {
 		expectedError   *app.ErrorModel
 	}{
 		{
-			name:      "should return getMessageById error",
+			name:      "should return errDataBase",
 			messageId: uuid.NewString(),
 			messageStore: messageStoreMock{
 				FindMessageByIdFunc: func(id string) (message.Message, error) {
-					return message.Message{}, errors.New("getMessageById error")
+					return message.Message{}, errors.New("something wrong with db")
+				},
+			},
+			expectedCode:    http.StatusInternalServerError,
+			expectedMessage: message.Message{},
+			expectedError:   &app.ErrorModel{Error: ErrDataBase.Error()},
+		},
+		{
+			name:      "should return errMessageNotFound",
+			messageId: uuid.NewString(),
+			messageStore: messageStoreMock{
+				FindMessageByIdFunc: func(id string) (message.Message, error) {
+					return message.Message{}, message.ErrMessageNotFound
 				},
 			},
 			expectedCode:    http.StatusNotFound,
 			expectedMessage: message.Message{},
-			expectedError:   &app.ErrorModel{Error: "getMessageById error"},
+			expectedError:   &app.ErrorModel{Error: message.ErrMessageNotFound.Error()},
 		},
 		{
 			name:      "should return message",

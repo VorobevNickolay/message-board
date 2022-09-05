@@ -62,11 +62,11 @@ func TestGetUsers(t *testing.T) {
 			name: "should return error if GetUsers fails",
 			userStore: userStoreMock{
 				GetUsersFunc: func() ([]*user.User, error) {
-					return []*user.User{}, errors.New("GetUsers error")
+					return []*user.User{}, errors.New("something wrong with db")
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: "GetUsers error"},
+			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name: "should return users",
@@ -128,7 +128,7 @@ func TestGetUserById(t *testing.T) {
 		expectedError     *app.ErrorModel
 	}{
 		{
-			name: "should return errUserNotFound, if there is no user with this id",
+			name: "should return errUserNotFound",
 			userStore: userStoreMock{
 				FindUserByIdFunc: func(id string) (user.User, error) {
 					return user.User{}, user.ErrUserNotFound
@@ -139,15 +139,15 @@ func TestGetUserById(t *testing.T) {
 			expectedError: &app.ErrorModel{Error: user.ErrUserNotFound.Error()},
 		},
 		{
-			name: "should return another error if findUserById fails",
+			name: "should return errDataBase",
 			userStore: userStoreMock{
 				FindUserByIdFunc: func(id string) (user.User, error) {
-					return user.User{}, errors.New("findUserById error")
+					return user.User{}, errors.New("something wrong with db")
 				},
 			},
 			userId:        uuid.NewString(),
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: app.UnknownError.Error},
+			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name: "should return user",
@@ -205,14 +205,101 @@ func TestSignUp(t *testing.T) {
 		expectedError     *app.ErrorModel
 	}{
 		{
-			name: "should return create user error",
+			name: "should return DataBase error",
 			userStore: userStoreMock{
 				CreateUserFunc: func(name, password string) (user.User, error) {
-					return user.User{}, errors.New("createUser error")
+					return user.User{}, errors.New("something wrong with db")
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: errors.New("createUser error").Error()},
+			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
+		},
+		{
+			name: "should return ErrEmptyPassword",
+			userStore: userStoreMock{
+				CreateUserFunc: func(name, password string) (user.User, error) {
+					return user.User{}, user.ErrEmptyPassword
+				},
+			},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: &app.ErrorModel{Error: user.ErrEmptyPassword.Error()},
+		},
+		{
+			name: "should return ErrUsedUsername",
+			userStore: userStoreMock{
+				CreateUserFunc: func(name, password string) (user.User, error) {
+					return user.User{}, user.ErrUsedUsername
+				},
+			},
+			expectedCode:  http.StatusConflict,
+			expectedError: &app.ErrorModel{Error: user.ErrUsedUsername.Error()},
+		},
+		{
+			name: "should create user",
+			userStore: userStoreMock{
+				CreateUserFunc: func(name, password string) (user.User, error) {
+					return user.User{ID: "ID1", Username: "Username1", Password: "Password1"}, nil
+				},
+			},
+			expectedCode:      http.StatusCreated,
+			expectedUserModel: userModelFromUser(user.User{ID: "ID1", Username: "Username1", Password: "Password1"}),
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			g := gin.Default()
+			r := NewRouter(&tt.userStore)
+			r.SetUpRouter(g)
+
+			var u = user.User{}
+
+			jsonValue, _ := json.Marshal(u)
+			req, _ := http.NewRequest("POST", "/user", bytes.NewBuffer(jsonValue))
+			w := httptest.NewRecorder()
+			g.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedCode, w.Code)
+
+			emptyUserModel := UserModel{}
+			if tt.expectedUserModel != emptyUserModel {
+				var actualUserModel UserModel
+				err := json.Unmarshal(w.Body.Bytes(), &actualUserModel)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.expectedUserModel, actualUserModel)
+			}
+
+			if tt.expectedError != nil {
+				var errorModel app.ErrorModel
+				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.expectedError, &errorModel)
+			}
+		})
+	}
+}
+
+func TestLogin(t *testing.T) {
+	tests := []struct {
+		name              string
+		userStore         userStoreMock
+		sentJSON          []byte
+		expectedCode      int
+		expectedUserModel UserModel
+		expectedError     *app.ErrorModel
+	}{
+		{
+			name: "should return ErrDataBase",
+			userStore: userStoreMock{
+				CreateUserFunc: func(name, password string) (user.User, error) {
+					return user.User{}, errors.New("something wrong with db")
+				},
+			},
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name: "should create user",

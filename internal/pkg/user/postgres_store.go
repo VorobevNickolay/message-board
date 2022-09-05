@@ -36,6 +36,7 @@ func (s *postgresStore) CreateUser(ctx context.Context, name, password string) (
 	if err == nil {
 		return User{}, ErrUsedUsername
 	}
+	// todo: insert
 	sql := "INSERT INTO users (name,password,created_at) VALUES ($1,$2,$3) RETURNING id"
 	params := []interface{}{
 		name,             // 1
@@ -83,6 +84,9 @@ func (s *postgresStore) findUserByName(ctx context.Context, name string) (User, 
 }
 
 func (s *postgresStore) FindUserByNameAndPassword(ctx context.Context, name, password string) (User, error) {
+	if name == "" || password == "" {
+		return User{}, ErrEmptyPassword
+	}
 	u, err := s.findUserByName(ctx, name)
 	if err != nil {
 		return User{}, err

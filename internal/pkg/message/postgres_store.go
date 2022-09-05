@@ -18,6 +18,8 @@ func NewPostgresStore(pool *pgxpool.Pool) Store {
 	return &postgresStore{pool}
 }
 
+//todo: refactor selectMessages
+
 var selectMessages = "SELECT id,userId, text FROM messages "
 
 func messageToPointerArray(message *Message) []interface{} {
@@ -79,9 +81,13 @@ func (s *postgresStore) GetMessages(ctx context.Context) ([]*Message, error) {
 	return messages, nil
 }
 func (s *postgresStore) UpdateMessage(ctx context.Context, id, text string) (Message, error) {
+	if text == "" {
+		return Message{}, ErrEmptyMessage
+	}
 	sql := "UPDATE messages SET text = $1 WHERE id = $2 returning id, userid, text"
 	row := s.pool.QueryRow(ctx, sql, text, id)
 	var message Message
+	// todo: add scan func
 	err := row.Scan(messageToPointerArray(&message)...)
 	if err != nil {
 		if errors.Is(err, ErrNoRows) {
@@ -93,13 +99,13 @@ func (s *postgresStore) UpdateMessage(ctx context.Context, id, text string) (Mes
 }
 
 func (s *postgresStore) DeleteMessage(ctx context.Context, id string) error {
-	//todo: fix returning
-	sql := "DELETE FROM messages WHERE id = $1 returning true"
-	row := s.pool.QueryRow(ctx, sql, id)
-	var res interface{}
-	err := row.Scan(&res)
-	if err != nil {
+	sql := "DELETE FROM messages WHERE id = $1"
+	com, err := s.pool.Exec(ctx, sql, id)
+	if err != nil || com.RowsAffected() == 0 {
 		if errors.Is(err, ErrNoRows) {
+			return ErrMessageNotFound
+		}
+		if com.RowsAffected() == 0 {
 			return ErrMessageNotFound
 		}
 		return fmt.Errorf("failed to select user from db %w", err)

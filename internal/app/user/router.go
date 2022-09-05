@@ -34,7 +34,7 @@ func (r *Router) SetUpRouter(engine *gin.Engine) {
 func (r *Router) getUsers(c *gin.Context) {
 	users, err := r.store.GetUsers(c)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusOK, users)
@@ -47,7 +47,7 @@ func (r *Router) getUserByID(c *gin.Context) {
 		if errors.Is(err, userpkg.ErrUserNotFound) {
 			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, app.UnknownError)
+			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
@@ -58,36 +58,45 @@ func (r *Router) login(c *gin.Context) {
 	var u userpkg.User
 
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, app.ErrorModel{Error: err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
 	}
 	u, err := r.store.FindUserByNameAndPassword(c, u.Username, u.Password)
 	if err != nil {
 		if errors.Is(err, userpkg.ErrUserNotFound) {
-			c.JSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+		} else if errors.Is(err, userpkg.ErrEmptyPassword) {
+			c.IndentedJSON(http.StatusBadRequest, app.ErrorModel{Error: err.Error()})
 		} else {
-			c.JSON(http.StatusInternalServerError, app.UnknownError)
+			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
 
 	token, err := jwt.CreateToken(u.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, app.TokenModel{Token: token})
+	c.IndentedJSON(http.StatusOK, app.TokenModel{Token: token})
 }
 
 func (r *Router) signUp(c *gin.Context) {
 	var newUser userpkg.User
 	if err := c.BindJSON(&newUser); err != nil {
-		c.JSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
 		return
 	}
+
 	u, err := r.store.CreateUser(c, newUser.Username, newUser.Password)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
+		if errors.Is(err, userpkg.ErrEmptyPassword) {
+			c.IndentedJSON(http.StatusBadRequest, app.ErrorModel{Error: err.Error()})
+		} else if errors.Is(err, userpkg.ErrUsedUsername) {
+			c.IndentedJSON(http.StatusConflict, app.ErrorModel{Error: err.Error()})
+		} else {
+			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+		}
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, userModelFromUser(u))
