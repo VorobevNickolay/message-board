@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"time"
 )
@@ -22,8 +23,25 @@ func NewPostgresStore(pool *pgxpool.Pool) Store {
 
 var selectMessages = "SELECT id,userId, text FROM messages "
 
-func messageToPointerArray(message *Message) []interface{} {
-	return []interface{}{&message.ID, &message.UserId, &message.Text}
+func scanMessage(row pgx.Row) (Message, error) {
+	var m Message
+	err := row.Scan(&m.ID, &m.UserId, &m.Text)
+	if err != nil {
+		return Message{}, err
+	}
+	return m, nil
+}
+func scanMessages(rows pgx.Rows) ([]*Message, error) {
+	var users []*Message
+	var m Message
+	for rows.Next() {
+		err := rows.Scan(&m.ID, &m.UserId, &m.Text)
+		users = append(users, createPointer(m))
+		if err != nil {
+			return []*Message{}, fmt.Errorf("failed to select users from db %w", err)
+		}
+	}
+	return users, nil
 }
 
 func (s *postgresStore) CreateMessage(ctx context.Context, message Message) (Message, error) {
@@ -52,8 +70,7 @@ func (s *postgresStore) CreateMessage(ctx context.Context, message Message) (Mes
 func (s *postgresStore) FindMessageById(ctx context.Context, id string) (Message, error) {
 	sql := selectMessages + "WHERE id = $1"
 	row := s.pool.QueryRow(ctx, sql, id)
-	var message Message
-	err := row.Scan(messageToPointerArray(&message)...)
+	message, err := scanMessage(row)
 	if err != nil {
 		if errors.Is(err, ErrNoRows) {
 			return Message{}, ErrMessageNotFound
@@ -69,14 +86,9 @@ func (s *postgresStore) GetMessages(ctx context.Context) ([]*Message, error) {
 	if err != nil {
 		return []*Message{}, err
 	}
-	var messages []*Message
-	var message Message
-	for rows.Next() {
-		err := rows.Scan(messageToPointerArray(&message)...)
-		if err != nil {
-			return []*Message{}, fmt.Errorf("failed to select users from db %w", err)
-		}
-		messages = append(messages, createPointer(message))
+	messages, err := scanMessages(rows)
+	if err != nil {
+		return []*Message{}, err
 	}
 	return messages, nil
 }
@@ -86,9 +98,7 @@ func (s *postgresStore) UpdateMessage(ctx context.Context, id, text string) (Mes
 	}
 	sql := "UPDATE messages SET text = $1 WHERE id = $2 returning id, userid, text"
 	row := s.pool.QueryRow(ctx, sql, text, id)
-	var message Message
-	// todo: add scan func
-	err := row.Scan(messageToPointerArray(&message)...)
+	message, err := scanMessage(row)
 	if err != nil {
 		if errors.Is(err, ErrNoRows) {
 			return Message{}, ErrMessageNotFound

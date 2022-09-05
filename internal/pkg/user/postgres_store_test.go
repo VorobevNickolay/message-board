@@ -117,6 +117,19 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserByNameAndPassword
 		suite.Require().EqualError(err, ErrUserNotFound.Error())
 		suite.Empty(actualUser)
 	})
+	suite.Run("should return error", func() {
+		name := uuid.NewString()
+		u, err := suite.store.CreateUser(suite.ctx, name, uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
+		u, err = suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(u)
+		actualUser, err := suite.store.FindUserByNameAndPassword(suite.ctx, name, uuid.NewString())
+
+		suite.Require().EqualError(err, ErrUserNotFound.Error())
+		suite.Empty(actualUser)
+	})
 }
 
 func (suite *postgresStoreTestSuite) SetupTest() {

@@ -139,6 +139,20 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_UpdateMessage() {
 		suite.Require().EqualError(err, ErrMessageNotFound.Error())
 		suite.Empty(actualMessage)
 	})
+	suite.Run("should return errEmptyMessage", func() {
+		m := Message{
+			UserId: uuid.NewString(),
+			Text:   uuid.NewString(),
+		}
+
+		m, err := suite.store.CreateMessage(suite.ctx, m)
+		suite.Require().NoError(err)
+		suite.Require().NotEmpty(m)
+
+		actualMessage, err := suite.store.UpdateMessage(suite.ctx, uuid.NewString(), "")
+		suite.Require().EqualError(err, ErrEmptyMessage.Error())
+		suite.Empty(actualMessage)
+	})
 }
 
 func (suite *postgresStoreTestSuite) TestPostgresStore_DeleteMessage() {
