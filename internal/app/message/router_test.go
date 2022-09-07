@@ -1,6 +1,7 @@
 package message
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -120,7 +121,7 @@ func TestGetMessages(t *testing.T) {
 	}
 }
 
-// ToDo:  test postMessage,updateMessage, deleteMessage
+//todo:  test postMessage,updateMessage, deleteMessage
 func TestGetMessageByID(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -181,8 +182,96 @@ func TestGetMessageByID(t *testing.T) {
 			g := gin.Default()
 			r := NewRouter(&tt.messageStore)
 			r.SetUpRouter(g)
-
 			req, _ := http.NewRequest("GET", "/message/"+tt.messageId, nil)
+			w := httptest.NewRecorder()
+			g.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedCode, w.Code)
+
+			emptyMessage := message.Message{}
+			if tt.expectedMessage != emptyMessage {
+				var actualMessage message.Message
+				err := json.Unmarshal(w.Body.Bytes(), &actualMessage)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.expectedMessage, actualMessage)
+			}
+
+			if tt.expectedError != nil {
+				var errorModel app.ErrorModel
+				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.expectedError, &errorModel)
+			}
+		})
+	}
+}
+
+func TestPostMessage(t *testing.T) {
+	tests := []struct {
+		name            string
+		messageId       string
+		messageStore    messageStoreMock
+		expectedCode    int
+		expectedMessage message.Message
+		expectedError   *app.ErrorModel
+	}{
+		{
+			name:      "should return errDataBase",
+			messageId: uuid.NewString(),
+			messageStore: messageStoreMock{
+				CreateMessageFunc: func(m message.Message) (message.Message, error) {
+					return message.Message{}, errors.New("something wrong with db")
+				},
+			},
+			expectedCode:    http.StatusInternalServerError,
+			expectedMessage: message.Message{},
+			expectedError:   &app.ErrorModel{Error: ErrDataBase.Error()},
+		},
+		{
+			name:      "should return errEmptyMessage",
+			messageId: uuid.NewString(),
+			messageStore: messageStoreMock{
+				CreateMessageFunc: func(m message.Message) (message.Message, error) {
+					return message.Message{}, message.ErrEmptyMessage
+				},
+			},
+			expectedCode:    http.StatusBadRequest,
+			expectedMessage: message.Message{},
+			expectedError:   &app.ErrorModel{Error: message.ErrEmptyMessage.Error()},
+		},
+		{
+			name:      "should return message",
+			messageId: uuid.NewString(),
+			messageStore: messageStoreMock{
+				CreateMessageFunc: func(m message.Message) (message.Message, error) {
+					return message.Message{
+						ID:     "123-123-123",
+						UserId: "321-321-321",
+						Text:   "Hi!",
+					}, nil
+				},
+			},
+			expectedCode: http.StatusCreated,
+			expectedMessage: message.Message{
+				ID:     "123-123-123",
+				UserId: "321-321-321",
+				Text:   "Hi!",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			g := gin.Default()
+			r := NewRouter(&tt.messageStore)
+			g.POST("/message", r.postMessage)
+			ctx := &gin.Context{}
+			m := message.Message{Text: "123"}
+			jsonValue, _ := json.Marshal(m)
+			req, _ := http.NewRequestWithContext(ctx, "POST", "/message", bytes.NewBuffer(jsonValue))
 			w := httptest.NewRecorder()
 			g.ServeHTTP(w, req)
 

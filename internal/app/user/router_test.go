@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"message-board/internal/app"
+	"message-board/internal/pkg/jwt"
 	"message-board/internal/pkg/user"
 	"net/http"
 	"net/http/httptest"
@@ -37,8 +38,6 @@ func (u *userStoreMock) FindUserByNameAndPassword(_ context.Context, name, passw
 func (u *userStoreMock) GetUsers(_ context.Context) ([]*user.User, error) {
 	return u.GetUsersFunc()
 }
-
-//todo: add login test
 
 func TestGetUsers(t *testing.T) {
 	tests := []struct {
@@ -284,17 +283,17 @@ func TestSignUp(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	tests := []struct {
-		name              string
-		userStore         userStoreMock
-		sentJSON          []byte
-		expectedCode      int
-		expectedUserModel UserModel
-		expectedError     *app.ErrorModel
+		name           string
+		userStore      userStoreMock
+		sentJSON       []byte
+		expectedCode   int
+		expectedUserId string
+		expectedError  *app.ErrorModel
 	}{
 		{
 			name: "should return ErrDataBase",
 			userStore: userStoreMock{
-				CreateUserFunc: func(name, password string) (user.User, error) {
+				FindUserByNameAndPasswordFunc: func(name, password string) (user.User, error) {
 					return user.User{}, errors.New("something wrong with db")
 				},
 			},
@@ -302,14 +301,34 @@ func TestLogin(t *testing.T) {
 			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
-			name: "should create user",
+			name: "should return errEmptyPassword",
 			userStore: userStoreMock{
-				CreateUserFunc: func(name, password string) (user.User, error) {
+				FindUserByNameAndPasswordFunc: func(name, password string) (user.User, error) {
+					return user.User{}, user.ErrEmptyPassword
+				},
+			},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: &app.ErrorModel{Error: user.ErrEmptyPassword.Error()},
+		},
+		{
+			name: "should return errUserNotFound",
+			userStore: userStoreMock{
+				FindUserByNameAndPasswordFunc: func(name, password string) (user.User, error) {
+					return user.User{}, user.ErrUserNotFound
+				},
+			},
+			expectedCode:  http.StatusNotFound,
+			expectedError: &app.ErrorModel{Error: user.ErrUserNotFound.Error()},
+		},
+		{
+			name: "should return token",
+			userStore: userStoreMock{
+				FindUserByNameAndPasswordFunc: func(name, password string) (user.User, error) {
 					return user.User{ID: "ID1", Username: "Username1", Password: "Password1"}, nil
 				},
 			},
-			expectedCode:      http.StatusCreated,
-			expectedUserModel: userModelFromUser(user.User{ID: "ID1", Username: "Username1", Password: "Password1"}),
+			expectedCode:   http.StatusOK,
+			expectedUserId: "ID1",
 		},
 	}
 
@@ -323,19 +342,19 @@ func TestLogin(t *testing.T) {
 			var u = user.User{}
 
 			jsonValue, _ := json.Marshal(u)
-			req, _ := http.NewRequest("POST", "/user", bytes.NewBuffer(jsonValue))
+			req, _ := http.NewRequest("POST", "/user/login", bytes.NewBuffer(jsonValue))
 			w := httptest.NewRecorder()
 			g.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expectedCode, w.Code)
 
-			emptyUserModel := UserModel{}
-			if tt.expectedUserModel != emptyUserModel {
-				var actualUserModel UserModel
-				err := json.Unmarshal(w.Body.Bytes(), &actualUserModel)
+			if tt.expectedUserId != "" {
+				var token app.TokenModel
+				err := json.Unmarshal(w.Body.Bytes(), &token)
 				assert.NoError(t, err)
-
-				assert.Equal(t, tt.expectedUserModel, actualUserModel)
+				userId, err := jwt.ParseToken(token.Token)
+				assert.NoError(t, err)
+				assert.Equal(t, userId, tt.expectedUserId)
 			}
 
 			if tt.expectedError != nil {
