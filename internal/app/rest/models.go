@@ -1,4 +1,4 @@
-package app
+package rest
 
 type ErrorModel struct {
 	Error string `json:"error"`

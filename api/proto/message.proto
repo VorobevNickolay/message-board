@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package grpc;
+
+service MessageBoard{
+  rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse){}
+  rpc FindMessageById(FindMessageByIdRequest) returns (FindMessageByIdResponse){}
+  rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse){}
+  rpc UpdateMessage(UpdateMessageRequest) returns (UpdateMessageResponse){}
+  rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse){}
+}
+
+message Message{
+  string id = 1;
+  string userId = 2;
+  string text = 3;
+}
+
+message Messages{
+  repeated Message user = 1;
+}
+
+message GetMessagesRequest{}
+message GetMessagesResponse{
+  Messages messages = 1;
+}
+
+message FindMessageByIdRequest{
+  string userId = 1;
+}
+
+message FindMessageByIdResponse{
+  Message message = 1;
+}
+
+message CreateMessageRequest{
+  string userId = 1;
+  string text = 2;
+}
+
+message CreateMessageResponse{
+  Message message = 1;
+}
+
+message UpdateMessageRequest{
+  string id = 1;
+  string text = 2;
+}
+
+message UpdateMessageResponse{
+  Message message = 1;
+}
+message DeleteMessageRequest{
+  string messageId = 1;
+}
+message DeleteMessageResponse{}

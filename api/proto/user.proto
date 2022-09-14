@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package grpc;
+
+service UserService{
+  rpc GetUsers(GetUserRequest) returns (GetUserResponse){}
+  rpc FindUserById(FindUserByIdRequest) returns (FindUserByIdResponse){}
+  rpc SignUp(SignUpRequest) returns (SignUpResponse){}
+}
+
+message User{
+  string id = 1;
+  string username = 2;
+  string password = 3;
+}
+message Users{
+  repeated User user = 1;
+}
+message GetUserRequest{}
+message GetUserResponse{
+  Users users = 1;
+}
+
+message FindUserByIdRequest{
+  string userId = 1;
+}
+message FindUserByIdResponse{
+  User user = 1;
+}
+
+message SignUpRequest{
+  string username = 1;
+  string password = 2;
+}
+message SignUpResponse{
+  User user = 1;
+}
+

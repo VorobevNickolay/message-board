@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"message-board/internal/app"
+	"message-board/internal/app/rest"
 	"message-board/internal/pkg/jwt"
 	"message-board/internal/pkg/user"
 	"net/http"
@@ -45,7 +46,7 @@ func TestGetUsers(t *testing.T) {
 		userStore     userStoreMock
 		expectedCode  int
 		expectedUsers *[]user.User
-		expectedError *app.ErrorModel
+		expectedError *rest.ErrorModel
 	}{
 		{
 			name: "should return empty array",
@@ -65,7 +66,7 @@ func TestGetUsers(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError: &rest.ErrorModel{Error: app.ErrDataBase.Error()},
 		},
 		{
 			name: "should return users",
@@ -107,7 +108,7 @@ func TestGetUsers(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 
@@ -124,7 +125,7 @@ func TestGetUserById(t *testing.T) {
 		userId            string
 		expectedCode      int
 		expectedUserModel UserModel
-		expectedError     *app.ErrorModel
+		expectedError     *rest.ErrorModel
 	}{
 		{
 			name: "should return errUserNotFound",
@@ -135,7 +136,7 @@ func TestGetUserById(t *testing.T) {
 			},
 			userId:        uuid.NewString(),
 			expectedCode:  http.StatusNotFound,
-			expectedError: &app.ErrorModel{Error: user.ErrUserNotFound.Error()},
+			expectedError: &rest.ErrorModel{Error: user.ErrUserNotFound.Error()},
 		},
 		{
 			name: "should return errDataBase",
@@ -146,7 +147,7 @@ func TestGetUserById(t *testing.T) {
 			},
 			userId:        uuid.NewString(),
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError: &rest.ErrorModel{Error: app.ErrDataBase.Error()},
 		},
 		{
 			name: "should return user",
@@ -184,7 +185,7 @@ func TestGetUserById(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 
@@ -201,7 +202,7 @@ func TestSignUp(t *testing.T) {
 		sentJSON          []byte
 		expectedCode      int
 		expectedUserModel UserModel
-		expectedError     *app.ErrorModel
+		expectedError     *rest.ErrorModel
 	}{
 		{
 			name: "should return DataBase error",
@@ -211,7 +212,7 @@ func TestSignUp(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError: &rest.ErrorModel{Error: app.ErrDataBase.Error()},
 		},
 		{
 			name: "should return ErrEmptyPassword",
@@ -221,7 +222,7 @@ func TestSignUp(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusBadRequest,
-			expectedError: &app.ErrorModel{Error: user.ErrEmptyPassword.Error()},
+			expectedError: &rest.ErrorModel{Error: user.ErrEmptyPassword.Error()},
 		},
 		{
 			name: "should return ErrUsedUsername",
@@ -231,7 +232,7 @@ func TestSignUp(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusConflict,
-			expectedError: &app.ErrorModel{Error: user.ErrUsedUsername.Error()},
+			expectedError: &rest.ErrorModel{Error: user.ErrUsedUsername.Error()},
 		},
 		{
 			name: "should create user",
@@ -271,7 +272,7 @@ func TestSignUp(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 
@@ -288,7 +289,7 @@ func TestLogin(t *testing.T) {
 		sentJSON       []byte
 		expectedCode   int
 		expectedUserId string
-		expectedError  *app.ErrorModel
+		expectedError  *rest.ErrorModel
 	}{
 		{
 			name: "should return ErrDataBase",
@@ -298,7 +299,7 @@ func TestLogin(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError: &rest.ErrorModel{Error: app.ErrDataBase.Error()},
 		},
 		{
 			name: "should return errEmptyPassword",
@@ -308,7 +309,7 @@ func TestLogin(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusBadRequest,
-			expectedError: &app.ErrorModel{Error: user.ErrEmptyPassword.Error()},
+			expectedError: &rest.ErrorModel{Error: user.ErrEmptyPassword.Error()},
 		},
 		{
 			name: "should return errUserNotFound",
@@ -318,7 +319,7 @@ func TestLogin(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusNotFound,
-			expectedError: &app.ErrorModel{Error: user.ErrUserNotFound.Error()},
+			expectedError: &rest.ErrorModel{Error: user.ErrUserNotFound.Error()},
 		},
 		{
 			name: "should return token",
@@ -349,7 +350,7 @@ func TestLogin(t *testing.T) {
 			assert.Equal(t, tt.expectedCode, w.Code)
 
 			if tt.expectedUserId != "" {
-				var token app.TokenModel
+				var token rest.TokenModel
 				err := json.Unmarshal(w.Body.Bytes(), &token)
 				assert.NoError(t, err)
 				userId, err := jwt.ParseToken(token.Token)
@@ -358,7 +359,7 @@ func TestLogin(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 

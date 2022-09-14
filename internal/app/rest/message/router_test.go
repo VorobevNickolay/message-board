@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"message-board/internal/app"
+	"message-board/internal/app/rest"
 	"message-board/internal/pkg/message"
 	"net/http"
 	"net/http/httptest"
@@ -49,7 +49,7 @@ func TestGetMessages(t *testing.T) {
 		messageStore     messageStoreMock
 		expectedCode     int
 		expectedMessages *[]message.Message
-		expectedError    *app.ErrorModel
+		expectedError    *rest.ErrorModel
 	}{
 		{
 			name: "should return empty array",
@@ -69,7 +69,7 @@ func TestGetMessages(t *testing.T) {
 				},
 			},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError: &rest.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name: "should return messages",
@@ -111,7 +111,7 @@ func TestGetMessages(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 
@@ -129,7 +129,7 @@ func TestGetMessageByID(t *testing.T) {
 		messageStore    messageStoreMock
 		expectedCode    int
 		expectedMessage message.Message
-		expectedError   *app.ErrorModel
+		expectedError   *rest.ErrorModel
 	}{
 		{
 			name:      "should return errDataBase",
@@ -141,7 +141,7 @@ func TestGetMessageByID(t *testing.T) {
 			},
 			expectedCode:    http.StatusInternalServerError,
 			expectedMessage: message.Message{},
-			expectedError:   &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError:   &rest.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name:      "should return errMessageNotFound",
@@ -153,7 +153,7 @@ func TestGetMessageByID(t *testing.T) {
 			},
 			expectedCode:    http.StatusNotFound,
 			expectedMessage: message.Message{},
-			expectedError:   &app.ErrorModel{Error: message.ErrMessageNotFound.Error()},
+			expectedError:   &rest.ErrorModel{Error: message.ErrMessageNotFound.Error()},
 		},
 		{
 			name:      "should return message",
@@ -198,7 +198,7 @@ func TestGetMessageByID(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 
@@ -215,7 +215,7 @@ func TestPostMessage(t *testing.T) {
 		messageStore    messageStoreMock
 		expectedCode    int
 		expectedMessage message.Message
-		expectedError   *app.ErrorModel
+		expectedError   *rest.ErrorModel
 	}{
 		{
 			name:      "should return errDataBase",
@@ -227,7 +227,7 @@ func TestPostMessage(t *testing.T) {
 			},
 			expectedCode:    http.StatusInternalServerError,
 			expectedMessage: message.Message{},
-			expectedError:   &app.ErrorModel{Error: ErrDataBase.Error()},
+			expectedError:   &rest.ErrorModel{Error: ErrDataBase.Error()},
 		},
 		{
 			name:      "should return errEmptyMessage",
@@ -239,7 +239,7 @@ func TestPostMessage(t *testing.T) {
 			},
 			expectedCode:    http.StatusBadRequest,
 			expectedMessage: message.Message{},
-			expectedError:   &app.ErrorModel{Error: message.ErrEmptyMessage.Error()},
+			expectedError:   &rest.ErrorModel{Error: message.ErrEmptyMessage.Error()},
 		},
 		{
 			name:      "should return message",
@@ -287,7 +287,7 @@ func TestPostMessage(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				var errorModel app.ErrorModel
+				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)
 				assert.NoError(t, err)
 

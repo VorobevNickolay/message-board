@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
-	"message-board/internal/app"
+	"message-board/internal/app/rest"
 	messagepkg "message-board/internal/pkg/message"
 	"net/http"
 )
@@ -27,15 +27,15 @@ func NewRouter(store messageStore) *Router {
 func (r *Router) SetUpRouter(engine *gin.Engine) {
 	engine.GET("/messages", r.getMessages)
 	engine.GET("/message/:id", r.getMessageByID)
-	engine.POST("/message", app.AuthMiddleware(), r.postMessage)
-	engine.PUT("/message/:id", app.AuthMiddleware(), r.updateMessage)
-	engine.DELETE("/message/:id", app.AuthMiddleware(), r.deleteMessage)
+	engine.POST("/message", rest.AuthMiddleware(), r.postMessage)
+	engine.PUT("/message/:id", rest.AuthMiddleware(), r.updateMessage)
+	engine.DELETE("/message/:id", rest.AuthMiddleware(), r.deleteMessage)
 }
 
 func (r *Router) postMessage(c *gin.Context) {
 	var newMessage messagepkg.Message
 	if err := c.BindJSON(&newMessage); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: err.Error()})
 		return
 	}
 
@@ -43,10 +43,10 @@ func (r *Router) postMessage(c *gin.Context) {
 	m, err := r.store.CreateMessage(c, newMessage)
 	if err != nil {
 		if errors.Is(err, messagepkg.ErrEmptyMessage) {
-			c.IndentedJSON(http.StatusBadRequest, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusBadRequest, rest.ErrorModel{Error: err.Error()})
 			return
 		}
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, m)
@@ -58,31 +58,31 @@ func (r *Router) updateMessage(c *gin.Context) {
 	oldMessage, err := r.store.FindMessageById(c, id)
 	if err != nil {
 		if errors.Is(err, messagepkg.ErrMessageNotFound) {
-			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusNotFound, rest.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
 
 	if oldMessage.UserId != userId {
-		c.IndentedJSON(http.StatusForbidden, app.ErrorModel{Error: app.ErrNoAccess.Error()})
+		c.IndentedJSON(http.StatusForbidden, rest.ErrorModel{Error: rest.ErrNoAccess.Error()})
 		return
 	}
 
 	var newMessage messagepkg.Message
 	if err := c.BindJSON(&newMessage); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: err.Error()})
 		return
 	}
 	m, err := r.store.UpdateMessage(c, id, newMessage.Text)
 	if err != nil {
 		if errors.Is(err, messagepkg.ErrMessageNotFound) {
-			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusNotFound, rest.ErrorModel{Error: err.Error()})
 		} else if errors.Is(err, messagepkg.ErrEmptyMessage) {
-			c.IndentedJSON(http.StatusBadRequest, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusBadRequest, rest.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
@@ -95,24 +95,24 @@ func (r *Router) deleteMessage(c *gin.Context) {
 	oldMessage, err := r.store.FindMessageById(c, id)
 	if err != nil {
 		if errors.Is(err, messagepkg.ErrMessageNotFound) {
-			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusNotFound, rest.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
 
 	if oldMessage.UserId != userId {
-		c.IndentedJSON(http.StatusForbidden, app.ErrorModel{Error: app.ErrNoAccess.Error()})
+		c.IndentedJSON(http.StatusForbidden, rest.ErrorModel{Error: rest.ErrNoAccess.Error()})
 		return
 	}
 
 	err = r.store.DeleteMessage(c, id)
 	if err != nil {
 		if errors.Is(err, messagepkg.ErrMessageNotFound) {
-			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusNotFound, rest.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
@@ -122,7 +122,7 @@ func (r *Router) deleteMessage(c *gin.Context) {
 func (r *Router) getMessages(c *gin.Context) {
 	messages, err := r.store.GetMessages(c)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusOK, messages)
@@ -134,9 +134,9 @@ func (r *Router) getMessageByID(c *gin.Context) {
 	m, err := r.store.FindMessageById(c, id)
 	if err != nil {
 		if errors.Is(err, messagepkg.ErrMessageNotFound) {
-			c.IndentedJSON(http.StatusNotFound, app.ErrorModel{Error: err.Error()})
+			c.IndentedJSON(http.StatusNotFound, rest.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, app.ErrorModel{Error: ErrDataBase.Error()})
+			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		}
 		return
 	}
