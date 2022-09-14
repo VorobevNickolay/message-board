@@ -17,7 +17,7 @@ message Message{
 }
 
 message Messages{
-  repeated Message user = 1;
+  repeated Message message = 1;
 }
 
 message GetMessagesRequest{}
@@ -26,7 +26,7 @@ message GetMessagesResponse{
 }
 
 message FindMessageByIdRequest{
-  string userId = 1;
+  string id = 1;
 }
 
 message FindMessageByIdResponse{

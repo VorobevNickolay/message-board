@@ -6,7 +6,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc"
 	"log"
-	grpc2 "message-board/internal/app/grpc/user"
+	grpcmessage "message-board/internal/app/grpc/message"
+	grpcuser "message-board/internal/app/grpc/user"
 	"message-board/internal/app/rest"
 	"message-board/internal/app/rest/message"
 	"message-board/internal/app/rest/user"
@@ -24,18 +25,21 @@ func main() {
 		os.Exit(1)
 	}
 	userStore := userpkg.NewPostgresStore(dbPool)
-	go initGRPC(userStore)
+	messageStore := messagepkg.NewPostgresStore(dbPool)
+	go initGRPC(userStore, messageStore)
 	userRouter := user.NewRouter(userStore)
-	messageRouter := message.NewRouter(messagepkg.NewPostgresStore(dbPool))
+	messageRouter := message.NewRouter(messageStore)
 	router := rest.NewRouter(userRouter, messageRouter)
 	router.SetUpRouter()
 	router.Run()
 }
 
-func initGRPC(userStore userpkg.Store) {
+func initGRPC(userStore userpkg.Store, messageStore messagepkg.Store) {
 	s := grpc.NewServer()
-	srv := grpc2.NewServer(userStore)
-	grpc2.RegisterUserServiceServer(s, srv)
+	userServer := grpcuser.NewServer(userStore)
+	messageServer := grpcmessage.NewServer(messageStore)
+	grpcuser.RegisterUserServiceServer(s, userServer)
+	grpcmessage.RegisterMessageBoardServer(s, messageServer)
 	l, err := net.Listen("tcp", ":8081")
 	if err != nil {
 		log.Fatal(err)
