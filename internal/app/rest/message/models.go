@@ -2,9 +2,21 @@ package message
 
 import "errors"
 
-type MessageModel struct {
-	username string `json:"username"`
-	text     string `json:"text"`
+type MessageResponse struct {
+	ID     string `json:"id"`
+	UserID string `json:"userId"`
+	Text   string `json:"text"`
+}
+
+type PostRequest struct {
+	UserID string `json:"userId"`
+	Text   string `json:"text"`
+}
+
+type UpdateRequest struct {
+	ID     string `json:"id"`
+	UserID string `json:"userId"`
+	Text   string `json:"text"`
 }
 
 var ErrDataBase = errors.New("database connection error")

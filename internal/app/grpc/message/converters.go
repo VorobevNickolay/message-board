@@ -2,40 +2,46 @@ package grpc
 
 import "message-board/internal/pkg/message"
 
-func MessageToGetMessageResponse(messages []*message.Message) *GetMessagesResponse {
-	r := &GetMessagesResponse{}
-	var arr []*Message
-	for _, u := range messages {
-		arr = append(arr, messageToGRPCMessage(u))
+func messageToGetMessageResponse(messages []*message.Message) GetMessagesResponse {
+	r := GetMessagesResponse{}
+	arr := make([]*Message, len(messages))
+	i := 0
+	for _, m := range messages {
+		arr[i] = createMessagePointer(messageToGRPCMessage(*m))
+		i++
 	}
 	mes := &Messages{Message: arr}
 	r.Messages = mes
 	return r
 }
 
-func MessageToFindMessageByIdResponse(message message.Message) *FindMessageByIdResponse {
-	r := &FindMessageByIdResponse{}
-	r.Message = messageToGRPCMessage(&message)
+func messageToFindMessageByIdResponse(message message.Message) FindMessageByIdResponse {
+	r := FindMessageByIdResponse{}
+	r.Message = createMessagePointer(messageToGRPCMessage(message))
 	return r
 }
 
-func MessageToCreateMessageResponse(message message.Message) *CreateMessageResponse {
-	r := &CreateMessageResponse{}
-	r.Message = messageToGRPCMessage(&message)
+func messageToCreateMessageResponse(message message.Message) CreateMessageResponse {
+	r := CreateMessageResponse{}
+	r.Message = createMessagePointer(messageToGRPCMessage(message))
 	return r
 }
 
-func MessageToUpdateMessageResponse(message message.Message) *UpdateMessageResponse {
-	r := &UpdateMessageResponse{}
-	r.Message = messageToGRPCMessage(&message)
+func messageToUpdateMessageResponse(message message.Message) UpdateMessageResponse {
+	r := UpdateMessageResponse{}
+	r.Message = createMessagePointer(messageToGRPCMessage(message))
 	return r
 }
 
-func messageToGRPCMessage(message *message.Message) *Message {
-	u := &Message{
+func messageToGRPCMessage(message message.Message) Message {
+	u := Message{
 		Id:     message.ID,
-		UserId: message.UserId,
+		UserId: message.UserID,
 		Text:   message.Text,
 	}
 	return u
+}
+
+func createMessagePointer(message Message) *Message {
+	return &message
 }

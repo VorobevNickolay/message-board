@@ -44,7 +44,8 @@ message CreateMessageResponse{
 
 message UpdateMessageRequest{
   string id = 1;
-  string text = 2;
+  string userId = 2;
+  string text = 3;
 }
 
 message UpdateMessageResponse{

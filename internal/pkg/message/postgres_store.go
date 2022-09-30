@@ -25,7 +25,7 @@ var selectMessages = "SELECT id,userId, text FROM messages "
 
 func scanMessage(row pgx.Row) (Message, error) {
 	var m Message
-	err := row.Scan(&m.ID, &m.UserId, &m.Text)
+	err := row.Scan(&m.ID, &m.UserID, &m.Text)
 	if err != nil {
 		return Message{}, err
 	}
@@ -35,7 +35,7 @@ func scanMessages(rows pgx.Rows) ([]*Message, error) {
 	var users []*Message
 	var m Message
 	for rows.Next() {
-		err := rows.Scan(&m.ID, &m.UserId, &m.Text)
+		err := rows.Scan(&m.ID, &m.UserID, &m.Text)
 		users = append(users, createPointer(m))
 		if err != nil {
 			return []*Message{}, fmt.Errorf("failed to select users from db %w", err)
@@ -50,7 +50,7 @@ func (s *postgresStore) CreateMessage(ctx context.Context, message Message) (Mes
 	}
 	sql := "INSERT INTO messages (userId,text,created_at) VALUES ($1,$2,$3) RETURNING id"
 	params := []interface{}{
-		message.UserId,   // 1
+		message.UserID,   // 1
 		message.Text,     // 2
 		time.Now().UTC(), // 3
 	}
@@ -62,7 +62,7 @@ func (s *postgresStore) CreateMessage(ctx context.Context, message Message) (Mes
 	}
 	return Message{
 		ID:     id,
-		UserId: message.UserId,
+		UserID: message.UserID,
 		Text:   message.Text,
 	}, nil
 }
@@ -92,12 +92,9 @@ func (s *postgresStore) GetMessages(ctx context.Context) ([]*Message, error) {
 	}
 	return messages, nil
 }
-func (s *postgresStore) UpdateMessage(ctx context.Context, id, text string) (Message, error) {
-	if text == "" {
-		return Message{}, ErrEmptyMessage
-	}
+func (s *postgresStore) UpdateMessage(ctx context.Context, message Message) (Message, error) {
 	sql := "UPDATE messages SET text = $1 WHERE id = $2 returning id, userid, text"
-	row := s.pool.QueryRow(ctx, sql, text, id)
+	row := s.pool.QueryRow(ctx, sql, message.Text, message.ID)
 	message, err := scanMessage(row)
 	if err != nil {
 		if errors.Is(err, ErrNoRows) {

@@ -89,9 +89,3 @@ func (store *inMemoryStore) FindUserByNameAndPassword(ctx context.Context, name,
 	}
 	return u, nil
 }
-
-func createHash(s string) string {
-	bytePassword := []byte(s)
-	hashPassword, _ := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
-	return string(hashPassword)
-}

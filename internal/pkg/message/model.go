@@ -7,7 +7,7 @@ import (
 
 type Message struct {
 	ID     string `json:"id"`
-	UserId string `json:"userId"`
+	UserID string `json:"userId"`
 	Text   string `json:"text"`
 }
 

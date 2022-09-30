@@ -17,13 +17,13 @@ func NewServer(store user.Store) *Server {
 	return &Server{store: store}
 }
 
-func (s *Server) GetUsers(ctx context.Context, req *GetUserRequest) (*GetUserResponse, error) {
+func (s *Server) GetUsers(ctx context.Context, _ *GetUserRequest) (*GetUserResponse, error) {
 	users, err := s.store.GetUsers(ctx)
 	if err != nil {
 		return &GetUserResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
-	r := UsersToGetUserResponse(users)
-	return r, nil
+	r := usersToGetUserResponse(users)
+	return &r, nil
 }
 
 func (s *Server) FindUserById(ctx context.Context, req *FindUserByIdRequest) (*FindUserByIdResponse, error) {
@@ -32,7 +32,7 @@ func (s *Server) FindUserById(ctx context.Context, req *FindUserByIdRequest) (*F
 		return &FindUserByIdResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
 	r := userToFindUserByIdResponse(user)
-	return r, nil
+	return &r, nil
 }
 
 func (s *Server) SignUp(ctx context.Context, req *SignUpRequest) (*SignUpResponse, error) {
@@ -41,5 +41,5 @@ func (s *Server) SignUp(ctx context.Context, req *SignUpRequest) (*SignUpRespons
 		return &SignUpResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
 	r := userToSignUpResponse(user)
-	return r, nil
+	return &r, nil
 }

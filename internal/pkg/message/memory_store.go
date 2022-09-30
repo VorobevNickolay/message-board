@@ -21,9 +21,6 @@ func NewInMemoryStore() Store {
 
 func (store *inMemoryStore) CreateMessage(_ context.Context, message Message) (Message, error) {
 	message.ID = uuid.NewString()
-	if message.Text == "" {
-		return Message{}, ErrEmptyMessage
-	}
 	store.messages = append(store.messages, &message)
 	store.messageIDs[message.ID] = len(store.messages) - 1
 	return message, nil
@@ -51,15 +48,11 @@ func (store *inMemoryStore) DeleteMessage(_ context.Context, id string) error {
 	return nil
 }
 
-func (store *inMemoryStore) UpdateMessage(_ context.Context, id, text string) (Message, error) {
-	if text == "" {
-		return Message{}, ErrEmptyMessage
-	}
-	m, ok := store.messageIDs[id]
+func (store *inMemoryStore) UpdateMessage(_ context.Context, message Message) (Message, error) {
+	m, ok := store.messageIDs[message.ID]
 	if !ok {
 		return Message{}, ErrMessageNotFound
 	}
-	mes := store.messages[m]
-	mes.Text = text
-	return *mes, nil
+	store.messages[m] = &message
+	return message, nil
 }
