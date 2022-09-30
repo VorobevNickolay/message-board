@@ -427,7 +427,7 @@ func (c *userServiceClient) GetUsers(ctx context.Context, in *GetUserRequest, op
 
 func (c *userServiceClient) FindUserById(ctx context.Context, in *FindUserByIdRequest, opts ...grpc.CallOption) (*FindUserByIdResponse, error) {
 	out := new(FindUserByIdResponse)
-	err := c.cc.Invoke(ctx, "/grpc.UserService/FindUserById", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/grpc.UserService/FindUserByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +458,7 @@ func (*UnimplementedUserServiceServer) GetUsers(ctx context.Context, req *GetUse
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
 }
 func (*UnimplementedUserServiceServer) FindUserById(ctx context.Context, req *FindUserByIdRequest) (*FindUserByIdResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindUserById not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method FindUserByID not implemented")
 }
 func (*UnimplementedUserServiceServer) SignUp(ctx context.Context, req *SignUpRequest) (*SignUpResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SignUp not implemented")
@@ -496,7 +496,7 @@ func _UserService_FindUserById_Handler(srv interface{}, ctx context.Context, dec
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc.UserService/FindUserById",
+		FullMethod: "/grpc.UserService/FindUserByID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).FindUserById(ctx, req.(*FindUserByIdRequest))
@@ -531,7 +531,7 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_GetUsers_Handler,
 		},
 		{
-			MethodName: "FindUserById",
+			MethodName: "FindUserByID",
 			Handler:    _UserService_FindUserById_Handler,
 		},
 		{

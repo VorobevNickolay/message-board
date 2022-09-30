@@ -46,10 +46,6 @@ func scanUsers(rows pgx.Rows) ([]*User, error) {
 // todo: move hashing logic in service
 
 func (s *postgresStore) CreateUser(ctx context.Context, name, password string) (User, error) {
-	if name == "" || password == "" {
-		return User{}, ErrEmptyPassword
-	}
-
 	sql := "INSERT INTO users (name,password,created_at) VALUES ($1,$2,$3) RETURNING id"
 	params := []interface{}{
 		name,             // 1
@@ -68,7 +64,7 @@ func (s *postgresStore) CreateUser(ctx context.Context, name, password string) (
 		Password: password,
 	}, nil
 }
-func (s *postgresStore) FindUserById(ctx context.Context, id string) (User, error) {
+func (s *postgresStore) FindUserByID(ctx context.Context, id string) (User, error) {
 	sql := selectUsers + "WHERE id = $1"
 	row := s.pool.QueryRow(ctx, sql, id)
 	user, err := scanUser(row)
@@ -107,6 +103,7 @@ func (s *postgresStore) FindUserByNameAndPassword(ctx context.Context, name, pas
 	}
 	return u, nil
 }
+
 func (s *postgresStore) GetUsers(ctx context.Context) ([]*User, error) {
 	sql := selectUsers
 	rows, err := s.pool.Query(ctx, sql)

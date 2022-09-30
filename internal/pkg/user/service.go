@@ -9,6 +9,7 @@ import (
 type store interface {
 	CreateUser(ctx context.Context, name, password string) (User, error)
 	FindUserByName(ctx context.Context, name string) (User, error)
+	FindUserByID(ctx context.Context, id string) (User, error)
 }
 
 type Service struct {
@@ -48,4 +49,12 @@ func (s *Service) createHash(str string) string {
 	bytePassword := []byte(str)
 	hashPassword, _ := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
 	return string(hashPassword)
+}
+
+func (s *Service) FindUserByID(ctx context.Context, id string) (User, error) {
+	u, err := s.store.FindUserByID(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+	return u, nil
 }

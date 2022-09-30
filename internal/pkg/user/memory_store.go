@@ -19,16 +19,10 @@ func NewInMemoryStore() *inMemoryStore {
 	return &inMemoryStore{users: make(map[string]User)}
 }
 
-func (store *inMemoryStore) CreateUser(ctx context.Context, name, password string) (User, error) {
+func (store *inMemoryStore) CreateUser(_ context.Context, name, password string) (User, error) {
 	store.Lock()
 	defer store.Unlock()
 
-	if len(password) == 0 || len(name) == 0 {
-		return User{}, ErrEmptyPassword
-	}
-	if _, err := store.findUserByName(ctx, name); err == nil {
-		return User{}, ErrUsedUsername
-	}
 	user := User{
 		ID:       uuid.NewString(),
 		Username: name,
@@ -38,7 +32,7 @@ func (store *inMemoryStore) CreateUser(ctx context.Context, name, password strin
 	return user, nil
 }
 
-func (store *inMemoryStore) FindUserById(_ context.Context, id string) (User, error) {
+func (store *inMemoryStore) FindUserByID(_ context.Context, id string) (User, error) {
 	store.RLock()
 	defer store.RUnlock()
 

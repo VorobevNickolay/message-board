@@ -8,6 +8,7 @@ func usersToGetUserResponse(users []*user.User) GetUserResponse {
 	i := 0
 	for _, u := range users {
 		arr[i] = createPointer(userToGRPCUser(*u))
+		i++
 	}
 	us := &Users{User: arr}
 	r.Users = us

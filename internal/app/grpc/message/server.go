@@ -36,10 +36,11 @@ func (s *Server) FindMessageById(ctx context.Context, req *FindMessageByIdReques
 }
 
 func (s *Server) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*CreateMessageResponse, error) {
-	m := message.Message{
-		UserID: req.GetUserId(),
-		Text:   req.GetText(),
+	err := req.Validate()
+	if err != nil {
+		return &CreateMessageResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	m := createMessageRequestToMessage(req)
 
 	message, err := s.store.CreateMessage(ctx, m)
 	if err != nil {
@@ -50,11 +51,12 @@ func (s *Server) CreateMessage(ctx context.Context, req *CreateMessageRequest) (
 }
 
 func (s *Server) UpdateMessage(ctx context.Context, req *UpdateMessageRequest) (*UpdateMessageResponse, error) {
-	m := message.Message{
-		ID:     req.GetId(),
-		UserID: req.GetUserId(),
-		Text:   req.GetText(),
+	err := req.Validate()
+	if err != nil {
+		return &UpdateMessageResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
+	m := updateMessageRequestToMessage(req)
 	message, err := s.store.UpdateMessage(ctx, m)
 	if err != nil {
 		return &UpdateMessageResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())

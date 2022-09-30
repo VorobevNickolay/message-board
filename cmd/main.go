@@ -26,18 +26,18 @@ func main() {
 	}
 	userStore := userpkg.NewPostgresStore(dbPool)
 	messageStore := messagepkg.NewPostgresStore(dbPool)
-	go initGRPC(userStore, messageStore)
 	userService := userpkg.NewService(userStore)
 	userRouter := user.NewRouter(userService)
+	go initGRPC(userService, messageStore)
 	messageRouter := message.NewRouter(messageStore)
 	router := rest.NewRouter(userRouter, messageRouter)
 	router.SetUpRouter()
 	router.Run()
 }
 
-func initGRPC(userStore userpkg.Store, messageStore messagepkg.Store) {
+func initGRPC(userService *userpkg.Service, messageStore messagepkg.Store) {
 	s := grpc.NewServer()
-	userServer := grpcuser.NewServer(userStore)
+	userServer := grpcuser.NewServer(*userService)
 	messageServer := grpcmessage.NewServer(messageStore)
 	grpcuser.RegisterUserServiceServer(s, userServer)
 	grpcmessage.RegisterMessageBoardServer(s, messageServer)

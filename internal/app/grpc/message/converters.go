@@ -45,3 +45,20 @@ func messageToGRPCMessage(message message.Message) Message {
 func createMessagePointer(message Message) *Message {
 	return &message
 }
+
+func updateMessageRequestToMessage(req *UpdateMessageRequest) message.Message {
+	m := message.Message{
+		ID:     req.GetId(),
+		UserID: req.GetUserId(),
+		Text:   req.GetText(),
+	}
+	return m
+}
+
+func createMessageRequestToMessage(req *CreateMessageRequest) message.Message {
+	m := message.Message{
+		UserID: req.GetUserId(),
+		Text:   req.GetText(),
+	}
+	return m
+}

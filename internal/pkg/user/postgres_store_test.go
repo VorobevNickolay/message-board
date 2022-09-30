@@ -74,7 +74,7 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserById() {
 		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
 		suite.Require().NoError(err)
 		suite.Require().NotEmpty(u)
-		actualUser, err := suite.store.FindUserById(suite.ctx, user.ID)
+		actualUser, err := suite.store.FindUserByID(suite.ctx, user.ID)
 		suite.Require().NoError(err)
 		suite.Equal(user, actualUser)
 	})
@@ -85,7 +85,7 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserById() {
 		u, err = suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
 		suite.Require().NoError(err)
 		suite.Require().NotEmpty(u)
-		actualUser, err := suite.store.FindUserById(suite.ctx, uuid.NewString())
+		actualUser, err := suite.store.FindUserByID(suite.ctx, uuid.NewString())
 
 		suite.Require().EqualError(err, ErrUserNotFound.Error())
 		suite.Empty(actualUser)

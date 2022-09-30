@@ -10,24 +10,15 @@ import (
 
 type Server struct {
 	UnimplementedUserServiceServer
-	store user.Store
+	service user.Service
 }
 
-func NewServer(store user.Store) *Server {
-	return &Server{store: store}
-}
-
-func (s *Server) GetUsers(ctx context.Context, _ *GetUserRequest) (*GetUserResponse, error) {
-	users, err := s.store.GetUsers(ctx)
-	if err != nil {
-		return &GetUserResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
-	}
-	r := usersToGetUserResponse(users)
-	return &r, nil
+func NewServer(service user.Service) *Server {
+	return &Server{service: service}
 }
 
 func (s *Server) FindUserById(ctx context.Context, req *FindUserByIdRequest) (*FindUserByIdResponse, error) {
-	user, err := s.store.FindUserById(ctx, req.GetUserId())
+	user, err := s.service.FindUserByID(ctx, req.GetUserId())
 	if err != nil {
 		return &FindUserByIdResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
@@ -36,7 +27,11 @@ func (s *Server) FindUserById(ctx context.Context, req *FindUserByIdRequest) (*F
 }
 
 func (s *Server) SignUp(ctx context.Context, req *SignUpRequest) (*SignUpResponse, error) {
-	user, err := s.store.CreateUser(ctx, req.GetUsername(), req.GetPassword())
+	err := req.Validate()
+	if err != nil {
+		return &SignUpResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.service.SignUp(ctx, req.GetUsername(), req.GetPassword())
 	if err != nil {
 		return &SignUpResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}

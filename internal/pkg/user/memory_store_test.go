@@ -44,7 +44,7 @@ func TestFindUserById(t *testing.T) {
 		store := NewInMemoryStore()
 		g := &gin.Context{}
 
-		actual, err := store.FindUserById(g, uuid.NewString())
+		actual, err := store.FindUserByID(g, uuid.NewString())
 		require.Error(t, err, ErrUserNotFound)
 		require.Equal(t, actual, User{})
 	})
@@ -62,7 +62,7 @@ func TestFindUserById(t *testing.T) {
 		_, err = store.CreateUser(g, uuid.NewString(), uuid.NewString())
 		require.NoError(t, err)
 
-		actual, err := store.FindUserById(g, expected.ID)
+		actual, err := store.FindUserByID(g, expected.ID)
 		require.Equal(t, expected, actual)
 	})
 }
