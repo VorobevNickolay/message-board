@@ -49,7 +49,6 @@ func (s *postgresStore) CreateUser(ctx context.Context, name, password string) (
 	if name == "" || password == "" {
 		return User{}, ErrEmptyPassword
 	}
-	password = createHash(password)
 
 	sql := "INSERT INTO users (name,password,created_at) VALUES ($1,$2,$3) RETURNING id"
 	params := []interface{}{
@@ -82,7 +81,7 @@ func (s *postgresStore) FindUserById(ctx context.Context, id string) (User, erro
 	return user, nil
 }
 
-func (s *postgresStore) findUserByName(ctx context.Context, name string) (User, error) {
+func (s *postgresStore) FindUserByName(ctx context.Context, name string) (User, error) {
 	sql := selectUsers + "WHERE name = $1"
 	row := s.pool.QueryRow(ctx, sql, name)
 	user, err := scanUser(row)
@@ -99,7 +98,7 @@ func (s *postgresStore) FindUserByNameAndPassword(ctx context.Context, name, pas
 	if name == "" || password == "" {
 		return User{}, ErrEmptyPassword
 	}
-	u, err := s.findUserByName(ctx, name)
+	u, err := s.FindUserByName(ctx, name)
 	if err != nil {
 		return User{}, err
 	}

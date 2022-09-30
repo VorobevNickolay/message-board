@@ -56,8 +56,8 @@ func (r *Router) postMessage(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		return
 	}
-
-	c.IndentedJSON(http.StatusCreated, m)
+	response := messageToMessageResponse(m)
+	c.IndentedJSON(http.StatusCreated, response)
 }
 
 func (r *Router) updateMessage(c *gin.Context) {
@@ -81,7 +81,8 @@ func (r *Router) updateMessage(c *gin.Context) {
 		}
 		return
 	}
-	c.IndentedJSON(http.StatusOK, m)
+	response := messageToMessageResponse(m)
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func (r *Router) deleteMessage(c *gin.Context) {
@@ -120,7 +121,9 @@ func (r *Router) getMessages(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, messages)
+
+	response := messagesToMessageResponses(messages)
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func (r *Router) getMessageByID(c *gin.Context) {
@@ -136,5 +139,6 @@ func (r *Router) getMessageByID(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, m)
+	response := messageToMessageResponse(m)
+	c.IndentedJSON(http.StatusOK, response)
 }

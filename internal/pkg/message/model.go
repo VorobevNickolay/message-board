@@ -6,9 +6,9 @@ import (
 )
 
 type Message struct {
-	ID     string `json:"id"`
-	UserID string `json:"userId"`
-	Text   string `json:"text"`
+	ID     string
+	UserID string
+	Text   string
 }
 
 var ErrMessageNotFound = errors.New("message was not found")

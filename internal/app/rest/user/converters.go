@@ -2,6 +2,6 @@ package user
 
 import "message-board/internal/pkg/user"
 
-func userModelFromUser(user user.User) UserModel {
-	return UserModel{user.ID, user.Username}
+func userToUserResponse(user user.User) UserResponse {
+	return UserResponse{user.ID, user.Username}
 }

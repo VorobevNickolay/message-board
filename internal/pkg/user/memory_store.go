@@ -32,7 +32,7 @@ func (store *inMemoryStore) CreateUser(ctx context.Context, name, password strin
 	user := User{
 		ID:       uuid.NewString(),
 		Username: name,
-		Password: createHash(password),
+		Password: password,
 	}
 	store.users[user.ID] = user
 	return user, nil
@@ -68,6 +68,18 @@ func (store *inMemoryStore) GetUsers(_ context.Context) ([]*User, error) {
 
 // findUserByName find user and isn't thread-safe
 func (store *inMemoryStore) findUserByName(_ context.Context, name string) (User, error) {
+	for _, u := range store.users {
+		if strings.EqualFold(name, u.Username) {
+			return u, nil
+		}
+	}
+	return User{}, ErrUserNotFound
+}
+
+func (store *inMemoryStore) FindUserByName(_ context.Context, name string) (User, error) {
+	store.Lock()
+	defer store.Unlock()
+
 	for _, u := range store.users {
 		if strings.EqualFold(name, u.Username) {
 			return u, nil

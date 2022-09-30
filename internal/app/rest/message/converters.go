@@ -25,10 +25,10 @@ func messageToMessageResponse(message message.Message) MessageResponse {
 	}
 }
 
-func messagesToMessageResponses(messages []message.Message) []MessageResponse {
+func messagesToMessageResponses(messages []*message.Message) []MessageResponse {
 	res := make([]MessageResponse, len(messages))
-	for i, note := range messages {
-		res[i] = messageToMessageResponse(note)
+	for i, mes := range messages {
+		res[i] = messageToMessageResponse(*mes)
 	}
 	return res
 }
