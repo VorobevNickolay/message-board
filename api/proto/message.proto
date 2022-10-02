@@ -53,5 +53,6 @@ message UpdateMessageResponse{
 }
 message DeleteMessageRequest{
   string messageId = 1;
+  string userId = 2;
 }
 message DeleteMessageResponse{}

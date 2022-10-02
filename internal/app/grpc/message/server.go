@@ -10,15 +10,15 @@ import (
 
 type Server struct {
 	UnimplementedMessageBoardServer
-	store message.Store
+	service message.Service
 }
 
-func NewServer(store message.Store) *Server {
-	return &Server{store: store}
+func NewServer(service message.Service) *Server {
+	return &Server{service: service}
 }
 
 func (s *Server) GetMessages(ctx context.Context, _ *GetMessagesRequest) (*GetMessagesResponse, error) {
-	messages, err := s.store.GetMessages(ctx)
+	messages, err := s.service.GetMessages(ctx)
 	if err != nil {
 		return &GetMessagesResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
@@ -27,11 +27,11 @@ func (s *Server) GetMessages(ctx context.Context, _ *GetMessagesRequest) (*GetMe
 }
 
 func (s *Server) FindMessageById(ctx context.Context, req *FindMessageByIdRequest) (*FindMessageByIdResponse, error) {
-	message, err := s.store.FindMessageById(ctx, req.GetId())
+	m, err := s.service.FindMessageByID(ctx, req.GetId())
 	if err != nil {
 		return &FindMessageByIdResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
-	r := messageToFindMessageByIdResponse(message)
+	r := messageToFindMessageByIdResponse(m)
 	return &r, nil
 }
 
@@ -42,11 +42,11 @@ func (s *Server) CreateMessage(ctx context.Context, req *CreateMessageRequest) (
 	}
 	m := createMessageRequestToMessage(req)
 
-	message, err := s.store.CreateMessage(ctx, m)
+	m, err = s.service.CreateMessage(ctx, m)
 	if err != nil {
 		return &CreateMessageResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
-	r := messageToCreateMessageResponse(message)
+	r := messageToCreateMessageResponse(m)
 	return &r, nil
 }
 
@@ -57,16 +57,16 @@ func (s *Server) UpdateMessage(ctx context.Context, req *UpdateMessageRequest) (
 	}
 
 	m := updateMessageRequestToMessage(req)
-	message, err := s.store.UpdateMessage(ctx, m)
+	m, err = s.service.UpdateMessage(ctx, m)
 	if err != nil {
 		return &UpdateMessageResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}
-	r := messageToUpdateMessageResponse(message)
+	r := messageToUpdateMessageResponse(m)
 	return &r, nil
 }
 
 func (s *Server) DeleteMessage(ctx context.Context, req *DeleteMessageRequest) (*DeleteMessageResponse, error) {
-	err := s.store.DeleteMessage(ctx, req.GetMessageId())
+	err := s.service.DeleteMessage(ctx, req.GetMessageId(), req.GetUserId())
 	if err != nil {
 		return &DeleteMessageResponse{}, status.Errorf(codes.Internal, app.ErrDataBase.Error())
 	}

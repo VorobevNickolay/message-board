@@ -14,7 +14,7 @@ type postgresStoreTestSuite struct {
 	ctx context.Context
 
 	pool  *pgxpool.Pool
-	store Store
+	store store
 }
 
 func TestPostgresStore(t *testing.T) {
@@ -23,19 +23,19 @@ func TestPostgresStore(t *testing.T) {
 func (suite *postgresStoreTestSuite) TestPostgresStore_CreateMessage() {
 	suite.Run("should create user", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 
 		m1, err := suite.store.CreateMessage(suite.ctx, m)
 		suite.Require().NoError(err)
 		suite.NotEmpty(m1.ID)
-		suite.Equal(m.UserId, m1.UserId)
+		suite.Equal(m.UserID, m1.UserID)
 		suite.Equal(m.Text, m1.Text)
 	})
 	suite.Run("should return errEmptyMessage", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   "",
 		}
 
@@ -47,11 +47,11 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_CreateMessage() {
 func (suite *postgresStoreTestSuite) TestPostgresStore_FindMessageById() {
 	suite.Run("should return message", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		m1 := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		m, err := suite.store.CreateMessage(suite.ctx, m)
@@ -60,13 +60,13 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindMessageById() {
 		m1, err = suite.store.CreateMessage(suite.ctx, m1)
 		suite.Require().NoError(err)
 		suite.Require().NotEmpty(m1)
-		actualMessage, err := suite.store.FindMessageById(suite.ctx, m.ID)
+		actualMessage, err := suite.store.FindMessageByID(suite.ctx, m.ID)
 		suite.Require().NoError(err)
 		suite.Equal(m, actualMessage)
 	})
 	suite.Run("should return errMessageNotFound", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 
@@ -74,7 +74,7 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindMessageById() {
 		suite.Require().NoError(err)
 		suite.Require().NotEmpty(m)
 
-		actualMessage, err := suite.store.FindMessageById(suite.ctx, uuid.NewString())
+		actualMessage, err := suite.store.FindMessageByID(suite.ctx, uuid.NewString())
 		suite.Require().EqualError(err, ErrMessageNotFound.Error())
 		suite.Empty(actualMessage)
 	})
@@ -88,11 +88,11 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_GetMessages() {
 	})
 	suite.Run("should return messages", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		m1 := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		m, err := suite.store.CreateMessage(suite.ctx, m)
@@ -112,53 +112,31 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_GetMessages() {
 func (suite *postgresStoreTestSuite) TestPostgresStore_UpdateMessage() {
 	suite.Run("should return message", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
+
 		m, err := suite.store.CreateMessage(suite.ctx, m)
+		updated := Message{
+			ID:     m.ID,
+			UserID: m.UserID,
+			Text:   uuid.NewString(),
+		}
+
 		suite.Require().NoError(err)
 		suite.Require().NotEmpty(m)
-		newText := "Hi!"
-		actualMessage, err := suite.store.UpdateMessage(suite.ctx, m.ID, newText)
+		actualMessage, err := suite.store.UpdateMessage(suite.ctx, updated)
 		suite.Require().NoError(err)
 		suite.Equal(m.ID, actualMessage.ID)
-		suite.Equal(m.UserId, actualMessage.UserId)
-		suite.Equal(newText, actualMessage.Text)
-	})
-	suite.Run("should return errMessageNotFound", func() {
-		m := Message{
-			UserId: uuid.NewString(),
-			Text:   uuid.NewString(),
-		}
-
-		m, err := suite.store.CreateMessage(suite.ctx, m)
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(m)
-
-		actualMessage, err := suite.store.UpdateMessage(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.Require().EqualError(err, ErrMessageNotFound.Error())
-		suite.Empty(actualMessage)
-	})
-	suite.Run("should return errEmptyMessage", func() {
-		m := Message{
-			UserId: uuid.NewString(),
-			Text:   uuid.NewString(),
-		}
-
-		m, err := suite.store.CreateMessage(suite.ctx, m)
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(m)
-
-		actualMessage, err := suite.store.UpdateMessage(suite.ctx, uuid.NewString(), "")
-		suite.Require().EqualError(err, ErrEmptyMessage.Error())
-		suite.Empty(actualMessage)
+		suite.Equal(m.UserID, actualMessage.UserID)
+		suite.Equal(updated.Text, actualMessage.Text)
 	})
 }
 
 func (suite *postgresStoreTestSuite) TestPostgresStore_DeleteMessage() {
 	suite.Run("should return message", func() {
 		m := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		m, err := suite.store.CreateMessage(suite.ctx, m)

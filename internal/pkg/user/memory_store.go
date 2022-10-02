@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"sync"
 )
@@ -80,18 +79,4 @@ func (store *inMemoryStore) FindUserByName(_ context.Context, name string) (User
 		}
 	}
 	return User{}, ErrUserNotFound
-}
-
-func (store *inMemoryStore) FindUserByNameAndPassword(ctx context.Context, name, password string) (User, error) {
-	store.RLock()
-	defer store.RUnlock()
-
-	u, err := store.findUserByName(ctx, name)
-	if err != nil {
-		return User{}, err
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-		return User{}, ErrUserNotFound
-	}
-	return u, nil
 }

@@ -26,19 +26,24 @@ func main() {
 	}
 	userStore := userpkg.NewPostgresStore(dbPool)
 	messageStore := messagepkg.NewPostgresStore(dbPool)
+
 	userService := userpkg.NewService(userStore)
+	messageService := messagepkg.NewService(messageStore)
+
 	userRouter := user.NewRouter(userService)
-	go initGRPC(userService, messageStore)
-	messageRouter := message.NewRouter(messageStore)
+	messageRouter := message.NewRouter(messageService)
+
+	go initGRPC(userService, messageService)
+
 	router := rest.NewRouter(userRouter, messageRouter)
 	router.SetUpRouter()
 	router.Run()
 }
 
-func initGRPC(userService *userpkg.Service, messageStore messagepkg.Store) {
+func initGRPC(userService *userpkg.Service, messageService *messagepkg.Service) {
 	s := grpc.NewServer()
 	userServer := grpcuser.NewServer(*userService)
-	messageServer := grpcmessage.NewServer(messageStore)
+	messageServer := grpcmessage.NewServer(*messageService)
 	grpcuser.RegisterUserServiceServer(s, userServer)
 	grpcmessage.RegisterMessageBoardServer(s, messageServer)
 	l, err := net.Listen("tcp", ":8081")

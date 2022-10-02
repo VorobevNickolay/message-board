@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -88,20 +87,6 @@ func (s *postgresStore) FindUserByName(ctx context.Context, name string) (User, 
 		return User{}, fmt.Errorf("failed to select users from db %w", err)
 	}
 	return user, nil
-}
-
-func (s *postgresStore) FindUserByNameAndPassword(ctx context.Context, name, password string) (User, error) {
-	if name == "" || password == "" {
-		return User{}, ErrEmptyPassword
-	}
-	u, err := s.FindUserByName(ctx, name)
-	if err != nil {
-		return User{}, err
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-		return User{}, ErrUserNotFound
-	}
-	return u, nil
 }
 
 func (s *postgresStore) GetUsers(ctx context.Context) ([]*User, error) {

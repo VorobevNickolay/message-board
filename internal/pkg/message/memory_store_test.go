@@ -22,13 +22,13 @@ func TestGetMessages(t *testing.T) {
 		g := &gin.Context{}
 
 		expected1, err := store.CreateMessage(g, Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		})
 		require.NoError(t, err)
 
 		expected2, err := store.CreateMessage(g, Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		})
 		require.NoError(t, err)
@@ -45,7 +45,7 @@ func TestFindMessageById(t *testing.T) {
 		store := NewInMemoryStore()
 		g := &gin.Context{}
 
-		actual, err := store.FindMessageById(g, uuid.NewString())
+		actual, err := store.FindMessageByID(g, uuid.NewString())
 		require.Error(t, err, ErrMessageNotFound)
 		require.Equal(t, actual, Message{})
 	})
@@ -55,24 +55,24 @@ func TestFindMessageById(t *testing.T) {
 		g := &gin.Context{}
 
 		_, err := store.CreateMessage(g, Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		})
 		require.NoError(t, err)
 
 		expected, err := store.CreateMessage(g, Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		})
 		require.NoError(t, err)
 
 		_, err = store.CreateMessage(g, Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		})
 		require.NoError(t, err)
 
-		actual, err := store.FindMessageById(g, expected.ID)
+		actual, err := store.FindMessageByID(g, expected.ID)
 		require.Equal(t, expected, actual)
 	})
 }
@@ -82,23 +82,14 @@ func TestCreateMessage(t *testing.T) {
 		g := &gin.Context{}
 
 		expected := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		actual, err := store.CreateMessage(g, expected)
 		require.NoError(t, err)
-		require.Equal(t, expected.UserId, actual.UserId)
+		require.Equal(t, expected.UserID, actual.UserID)
 		require.Equal(t, expected.Text, actual.Text)
 		require.NotEmpty(t, actual.ID)
-	})
-	t.Run("should return ErrEmptyMessage", func(t *testing.T) {
-		store := NewInMemoryStore()
-		g := &gin.Context{}
-
-		expected := Message{}
-		actual, err := store.CreateMessage(g, expected)
-		require.Error(t, err, ErrEmptyMessage)
-		require.Empty(t, actual)
 	})
 }
 
@@ -108,40 +99,38 @@ func TestUpdateMessage(t *testing.T) {
 		g := &gin.Context{}
 
 		expected := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		expected, _ = store.CreateMessage(g, expected)
-		actual, err := store.UpdateMessage(g, expected.ID, "Hi!")
+
+		updated := Message{
+			ID:     expected.ID,
+			UserID: expected.UserID,
+			Text:   "Hi!",
+		}
+		actual, err := store.UpdateMessage(g, updated)
+
 		require.NoError(t, err)
-		require.Equal(t, expected.UserId, actual.UserId)
+		require.Equal(t, expected.UserID, actual.UserID)
 		require.Equal(t, expected.ID, actual.ID)
 		require.Equal(t, "Hi!", actual.Text)
 		require.NotEmpty(t, actual.ID)
-	})
-	t.Run("should return ErrEmptyMessage", func(t *testing.T) {
-		store := NewInMemoryStore()
-		g := &gin.Context{}
-
-		expected := Message{
-			UserId: uuid.NewString(),
-			Text:   uuid.NewString(),
-		}
-		expected, _ = store.CreateMessage(g, expected)
-		actual, err := store.UpdateMessage(g, expected.ID, "")
-		require.Error(t, err, ErrEmptyMessage)
-		require.Empty(t, actual)
 	})
 	t.Run("should return errMessageNotFound", func(t *testing.T) {
 		store := NewInMemoryStore()
 		g := &gin.Context{}
 
 		expected := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
+			Text:   uuid.NewString(),
+		}
+		updated := Message{
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		expected, _ = store.CreateMessage(g, expected)
-		actual, err := store.UpdateMessage(g, uuid.NewString(), "Hi!")
+		actual, err := store.UpdateMessage(g, updated)
 		require.Error(t, err, ErrMessageNotFound)
 		require.Empty(t, actual)
 	})
@@ -153,12 +142,12 @@ func TestDeleteMessage(t *testing.T) {
 		g := &gin.Context{}
 
 		oldMessage := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		oldMessage, _ = store.CreateMessage(g, oldMessage)
 		err := store.DeleteMessage(g, oldMessage.ID)
-		deleted, err2 := store.FindMessageById(g, oldMessage.ID)
+		deleted, err2 := store.FindMessageByID(g, oldMessage.ID)
 		require.NoError(t, err)
 		require.Error(t, err2)
 		require.Empty(t, deleted)
@@ -168,12 +157,12 @@ func TestDeleteMessage(t *testing.T) {
 		g := &gin.Context{}
 
 		oldMessage := Message{
-			UserId: uuid.NewString(),
+			UserID: uuid.NewString(),
 			Text:   uuid.NewString(),
 		}
 		oldMessage, _ = store.CreateMessage(g, oldMessage)
 		err := store.DeleteMessage(g, uuid.NewString())
-		deleted, _ := store.FindMessageById(g, oldMessage.ID)
+		deleted, _ := store.FindMessageByID(g, oldMessage.ID)
 		require.Error(t, err, ErrMessageNotFound)
 		require.Equal(t, deleted, oldMessage)
 	})

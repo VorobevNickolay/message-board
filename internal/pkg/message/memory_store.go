@@ -5,14 +5,14 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ Store = (*inMemoryStore)(nil)
+var _ store = (*inMemoryStore)(nil)
 
 type inMemoryStore struct {
 	messages   []*Message
 	messageIDs map[string]int
 }
 
-func NewInMemoryStore() Store {
+func NewInMemoryStore() store {
 	return &inMemoryStore{
 		messages:   make([]*Message, 0),
 		messageIDs: make(map[string]int),
@@ -26,7 +26,7 @@ func (store *inMemoryStore) CreateMessage(_ context.Context, message Message) (M
 	return message, nil
 }
 
-func (store *inMemoryStore) FindMessageById(_ context.Context, id string) (Message, error) {
+func (store *inMemoryStore) FindMessageByID(_ context.Context, id string) (Message, error) {
 
 	if m, ok := store.messageIDs[id]; ok {
 		return *store.messages[m], nil

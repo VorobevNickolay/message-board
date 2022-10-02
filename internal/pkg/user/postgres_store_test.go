@@ -39,13 +39,6 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_CreateUser() {
 		suite.Require().Error(err, ErrUsedUsername)
 		suite.Empty(user)
 	})
-	suite.Run("should return errEmptyPassword", func() {
-		name := ""
-		password := ""
-		user, err := suite.store.CreateUser(suite.ctx, name, password)
-		suite.Require().Error(err, ErrEmptyPassword)
-		suite.Empty(user)
-	})
 }
 func (suite *postgresStoreTestSuite) TestPostgresStore_GetUsers() {
 	suite.Run("should return empty users", func() {
@@ -86,46 +79,6 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserById() {
 		suite.Require().NoError(err)
 		suite.Require().NotEmpty(u)
 		actualUser, err := suite.store.FindUserByID(suite.ctx, uuid.NewString())
-
-		suite.Require().EqualError(err, ErrUserNotFound.Error())
-		suite.Empty(actualUser)
-	})
-}
-
-func (suite *postgresStoreTestSuite) TestPostgresStore_FindUserByNameAndPassword() {
-	suite.Run("should return user", func() {
-		name := uuid.NewString()
-		password := uuid.NewString()
-
-		user, _ := suite.store.CreateUser(suite.ctx, name, password)
-		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(u)
-		actualUser, err := suite.store.FindUserByNameAndPassword(suite.ctx, user.Username, password)
-		suite.Require().NoError(err)
-		suite.Equal(user, actualUser)
-	})
-	suite.Run("should return error", func() {
-		u, err := suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(u)
-		u, err = suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(u)
-		actualUser, err := suite.store.FindUserByNameAndPassword(suite.ctx, uuid.NewString(), uuid.NewString())
-
-		suite.Require().EqualError(err, ErrUserNotFound.Error())
-		suite.Empty(actualUser)
-	})
-	suite.Run("should return error", func() {
-		name := uuid.NewString()
-		u, err := suite.store.CreateUser(suite.ctx, name, uuid.NewString())
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(u)
-		u, err = suite.store.CreateUser(suite.ctx, uuid.NewString(), uuid.NewString())
-		suite.Require().NoError(err)
-		suite.Require().NotEmpty(u)
-		actualUser, err := suite.store.FindUserByNameAndPassword(suite.ctx, name, uuid.NewString())
 
 		suite.Require().EqualError(err, ErrUserNotFound.Error())
 		suite.Empty(actualUser)

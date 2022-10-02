@@ -3,12 +3,14 @@ package message
 import (
 	"errors"
 	"github.com/jackc/pgx/v4"
+	"time"
 )
 
 type Message struct {
-	ID     string
-	UserID string
-	Text   string
+	ID        string
+	UserID    string
+	Text      string
+	CreatedAt time.Time
 }
 
 var ErrMessageNotFound = errors.New("message was not found")

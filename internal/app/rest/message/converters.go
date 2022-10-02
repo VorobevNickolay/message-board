@@ -19,9 +19,10 @@ func postRequestToMessage(request PostRequest) message.Message {
 
 func messageToMessageResponse(message message.Message) MessageResponse {
 	return MessageResponse{
-		ID:     message.ID,
-		UserID: message.UserID,
-		Text:   message.Text,
+		ID:        message.ID,
+		UserID:    message.UserID,
+		Text:      message.Text,
+		CreatedAt: message.CreatedAt,
 	}
 }
 

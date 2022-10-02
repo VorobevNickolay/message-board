@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-var _ Store = (*postgresStore)(nil)
+var _ store = (*postgresStore)(nil)
 
 type postgresStore struct {
 	pool *pgxpool.Pool
 }
 
-func NewPostgresStore(pool *pgxpool.Pool) Store {
+func NewPostgresStore(pool *pgxpool.Pool) store {
 	return &postgresStore{pool}
 }
 
 //todo: refactor selectMessages
 
-var selectMessages = "SELECT id,userId, text FROM messages "
+var selectMessages = "SELECT id,userId, text,created_at FROM messages "
 
 func scanMessage(row pgx.Row) (Message, error) {
 	var m Message
@@ -35,7 +35,7 @@ func scanMessages(rows pgx.Rows) ([]*Message, error) {
 	var users []*Message
 	var m Message
 	for rows.Next() {
-		err := rows.Scan(&m.ID, &m.UserID, &m.Text)
+		err := rows.Scan(&m.ID, &m.UserID, &m.Text, &m.CreatedAt)
 		users = append(users, createPointer(m))
 		if err != nil {
 			return []*Message{}, fmt.Errorf("failed to select users from db %w", err)
@@ -67,7 +67,7 @@ func (s *postgresStore) CreateMessage(ctx context.Context, message Message) (Mes
 	}, nil
 }
 
-func (s *postgresStore) FindMessageById(ctx context.Context, id string) (Message, error) {
+func (s *postgresStore) FindMessageByID(ctx context.Context, id string) (Message, error) {
 	sql := selectMessages + "WHERE id = $1"
 	row := s.pool.QueryRow(ctx, sql, id)
 	message, err := scanMessage(row)
