@@ -8,52 +8,54 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"message-board/internal/app"
 	"message-board/internal/app/rest"
+	"message-board/internal/pkg/jwt"
 	"message-board/internal/pkg/message"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-type messageStoreMock struct {
+type messageServiceMock struct {
 	CreateMessageFunc   func(message message.Message) (message.Message, error)
 	FindMessageByIdFunc func(id string) (message.Message, error)
 	GetMessagesFunc     func() ([]*message.Message, error)
-	UpdateMessageFunc   func(id, text string) (message.Message, error)
-	DeleteMessageFunc   func(id string) error
+	UpdateMessageFunc   func(message message.Message) (message.Message, error)
+	DeleteMessageFunc   func(id, userID string) error
 }
 
-func (m *messageStoreMock) CreateMessage(_ context.Context, message message.Message) (message.Message, error) {
+func (m *messageServiceMock) CreateMessage(_ context.Context, message message.Message) (message.Message, error) {
 	return m.CreateMessageFunc(message)
 }
 
-func (m *messageStoreMock) FindMessageById(_ context.Context, id string) (message.Message, error) {
+func (m *messageServiceMock) FindMessageByID(_ context.Context, id string) (message.Message, error) {
 	return m.FindMessageByIdFunc(id)
 }
 
-func (m *messageStoreMock) GetMessages(_ context.Context) ([]*message.Message, error) {
+func (m *messageServiceMock) GetMessages(_ context.Context) ([]*message.Message, error) {
 	return m.GetMessagesFunc()
 }
 
-func (m *messageStoreMock) UpdateMessage(_ context.Context, id, text string) (message.Message, error) {
-	return m.UpdateMessageFunc(id, text)
+func (m *messageServiceMock) UpdateMessage(_ context.Context, message message.Message) (message.Message, error) {
+	return m.UpdateMessageFunc(message)
 }
 
-func (m *messageStoreMock) DeleteMessage(_ context.Context, id string) error {
-	return m.DeleteMessageFunc(id)
+func (m *messageServiceMock) DeleteMessage(_ context.Context, id, userID string) error {
+	return m.DeleteMessageFunc(id, userID)
 }
 
 func TestGetMessages(t *testing.T) {
 	tests := []struct {
 		name             string
-		messageStore     messageStoreMock
+		messageStore     messageServiceMock
 		expectedCode     int
 		expectedMessages *[]message.Message
 		expectedError    *rest.ErrorModel
 	}{
 		{
 			name: "should return empty array",
-			messageStore: messageStoreMock{
+			messageStore: messageServiceMock{
 				GetMessagesFunc: func() ([]*message.Message, error) {
 					return []*message.Message{}, nil
 				},
@@ -63,7 +65,7 @@ func TestGetMessages(t *testing.T) {
 		},
 		{
 			name: "should return errDataBase",
-			messageStore: messageStoreMock{
+			messageStore: messageServiceMock{
 				GetMessagesFunc: func() ([]*message.Message, error) {
 					return []*message.Message{}, errors.New("something wrong with db")
 				},
@@ -73,18 +75,18 @@ func TestGetMessages(t *testing.T) {
 		},
 		{
 			name: "should return messages",
-			messageStore: messageStoreMock{
+			messageStore: messageServiceMock{
 				GetMessagesFunc: func() ([]*message.Message, error) {
 					return []*message.Message{
-						{ID: "ID1", UserId: "User1", Text: "Text1"},
-						{ID: "ID2", UserId: "User2", Text: "Text2"},
+						{ID: "ID1", UserID: "User1", Text: "Text1"},
+						{ID: "ID2", UserID: "User2", Text: "Text2"},
 					}, nil
 				},
 			},
 			expectedCode: http.StatusOK,
 			expectedMessages: &[]message.Message{
-				{ID: "ID1", UserId: "User1", Text: "Text1"},
-				{ID: "ID2", UserId: "User2", Text: "Text2"},
+				{ID: "ID1", UserID: "User1", Text: "Text1"},
+				{ID: "ID2", UserID: "User2", Text: "Text2"},
 			},
 		},
 	}
@@ -121,12 +123,12 @@ func TestGetMessages(t *testing.T) {
 	}
 }
 
-//todo:  test postMessage,updateMessage, deleteMessage
+// todo:  test postMessage,updateMessage, deleteMessage
 func TestGetMessageByID(t *testing.T) {
 	tests := []struct {
 		name            string
 		messageId       string
-		messageStore    messageStoreMock
+		messageStore    messageServiceMock
 		expectedCode    int
 		expectedMessage message.Message
 		expectedError   *rest.ErrorModel
@@ -134,7 +136,7 @@ func TestGetMessageByID(t *testing.T) {
 		{
 			name:      "should return errDataBase",
 			messageId: uuid.NewString(),
-			messageStore: messageStoreMock{
+			messageStore: messageServiceMock{
 				FindMessageByIdFunc: func(id string) (message.Message, error) {
 					return message.Message{}, errors.New("something wrong with db")
 				},
@@ -146,7 +148,7 @@ func TestGetMessageByID(t *testing.T) {
 		{
 			name:      "should return errMessageNotFound",
 			messageId: uuid.NewString(),
-			messageStore: messageStoreMock{
+			messageStore: messageServiceMock{
 				FindMessageByIdFunc: func(id string) (message.Message, error) {
 					return message.Message{}, message.ErrMessageNotFound
 				},
@@ -158,11 +160,11 @@ func TestGetMessageByID(t *testing.T) {
 		{
 			name:      "should return message",
 			messageId: uuid.NewString(),
-			messageStore: messageStoreMock{
+			messageStore: messageServiceMock{
 				FindMessageByIdFunc: func(id string) (message.Message, error) {
 					return message.Message{
 						ID:     "123-123-123",
-						UserId: "321-321-321",
+						UserID: "321-321-321",
 						Text:   "Hi!",
 					}, nil
 				},
@@ -170,7 +172,7 @@ func TestGetMessageByID(t *testing.T) {
 			expectedCode: http.StatusOK,
 			expectedMessage: message.Message{
 				ID:     "123-123-123",
-				UserId: "321-321-321",
+				UserID: "321-321-321",
 				Text:   "Hi!",
 			},
 		},
@@ -208,57 +210,45 @@ func TestGetMessageByID(t *testing.T) {
 	}
 }
 
-func TestPostMessage(t *testing.T) {
+func TestCreateMessage(t *testing.T) {
 	tests := []struct {
 		name            string
-		messageId       string
-		messageStore    messageStoreMock
+		messageService  messageServiceMock
+		Request         PostRequest
 		expectedCode    int
-		expectedMessage message.Message
 		expectedError   *rest.ErrorModel
+		expectedMessage MessageResponse
 	}{
 		{
-			name:      "should return errDataBase",
-			messageId: uuid.NewString(),
-			messageStore: messageStoreMock{
-				CreateMessageFunc: func(m message.Message) (message.Message, error) {
-					return message.Message{}, errors.New("something wrong with db")
+			name: "should return request error",
+			messageService: messageServiceMock{
+				CreateMessageFunc: func(n message.Message) (message.Message, error) {
+					return message.Message{}, nil
 				},
 			},
-			expectedCode:    http.StatusInternalServerError,
-			expectedMessage: message.Message{},
-			expectedError:   &rest.ErrorModel{Error: ErrDataBase.Error()},
+			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name:      "should return errEmptyMessage",
-			messageId: uuid.NewString(),
-			messageStore: messageStoreMock{
-				CreateMessageFunc: func(m message.Message) (message.Message, error) {
-					return message.Message{}, message.ErrEmptyMessage
+			name:    "should return unknownError",
+			Request: PostRequest{Text: "123", UserID: "123-123"},
+			messageService: messageServiceMock{
+				CreateMessageFunc: func(n message.Message) (message.Message, error) {
+					return message.Message{}, errors.New("something wrong")
 				},
 			},
-			expectedCode:    http.StatusBadRequest,
-			expectedMessage: message.Message{},
-			expectedError:   &rest.ErrorModel{Error: message.ErrEmptyMessage.Error()},
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: &rest.ErrorModel{Error: app.ErrDataBase.Error()},
 		},
 		{
-			name:      "should return message",
-			messageId: uuid.NewString(),
-			messageStore: messageStoreMock{
-				CreateMessageFunc: func(m message.Message) (message.Message, error) {
-					return message.Message{
-						ID:     "123-123-123",
-						UserId: "321-321-321",
-						Text:   "Hi!",
-					}, nil
+			name:    "should return Message",
+			Request: PostRequest{Text: "123", UserID: "123-123"},
+			messageService: messageServiceMock{
+				CreateMessageFunc: func(n message.Message) (message.Message, error) {
+					return message.Message{ID: "123-123-123", Text: "123", UserID: "123-123"}, nil
 				},
 			},
-			expectedCode: http.StatusCreated,
-			expectedMessage: message.Message{
-				ID:     "123-123-123",
-				UserId: "321-321-321",
-				Text:   "Hi!",
-			},
+			expectedCode:    http.StatusCreated,
+			expectedMessage: messageToMessageResponse(message.Message{ID: "123-123-123", Text: "123", UserID: "123-123"}),
 		},
 	}
 
@@ -266,26 +256,26 @@ func TestPostMessage(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			g := gin.Default()
-			r := NewRouter(&tt.messageStore)
-			g.POST("/message", r.postMessage)
-			ctx := &gin.Context{}
-			m := message.Message{Text: "123"}
-			jsonValue, _ := json.Marshal(m)
-			req, _ := http.NewRequestWithContext(ctx, "POST", "/message", bytes.NewBuffer(jsonValue))
+			r := NewRouter(&tt.messageService)
+			r.SetUpRouter(g)
+
+			jsonValue, _ := json.Marshal(tt.Request)
 			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			req, _ := http.NewRequestWithContext(c, http.MethodPost, "/message", bytes.NewBuffer(jsonValue))
+			token, _ := jwt.CreateToken("123-123")
+			req.Header.Set(rest.AccessHeader, token)
 			g.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expectedCode, w.Code)
 
-			emptyMessage := message.Message{}
-			if tt.expectedMessage != emptyMessage {
-				var actualMessage message.Message
-				err := json.Unmarshal(w.Body.Bytes(), &actualMessage)
+			emptyResponse := MessageResponse{}
+			if tt.expectedMessage != emptyResponse {
+				var response MessageResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
-
-				assert.Equal(t, tt.expectedMessage, actualMessage)
+				assert.Equal(t, tt.expectedMessage, response)
 			}
-
 			if tt.expectedError != nil {
 				var errorModel rest.ErrorModel
 				err := json.Unmarshal(w.Body.Bytes(), &errorModel)

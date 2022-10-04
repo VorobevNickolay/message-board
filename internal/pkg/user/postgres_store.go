@@ -42,8 +42,6 @@ func scanUsers(rows pgx.Rows) ([]*User, error) {
 	return users, nil
 }
 
-// todo: move hashing logic in service
-
 func (s *postgresStore) CreateUser(ctx context.Context, name, password string) (User, error) {
 	sql := "INSERT INTO users (name,password,created_at) VALUES ($1,$2,$3) RETURNING id"
 	params := []interface{}{

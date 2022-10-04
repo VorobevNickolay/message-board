@@ -8,3 +8,4 @@ type TokenModel struct {
 }
 
 var UnknownError = ErrorModel{"Unknown error"}
+var AccessHeader = "X-Access-Token"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"message-board/internal/app"
 	"message-board/internal/app/rest"
 	messagepkg "message-board/internal/pkg/message"
 	"net/http"
@@ -53,7 +54,7 @@ func (r *Router) postMessage(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, rest.ErrorModel{Error: err.Error()})
 			return
 		}
-		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: app.ErrDataBase.Error()})
 		return
 	}
 	response := messageToMessageResponse(m)
@@ -77,7 +78,7 @@ func (r *Router) updateMessage(c *gin.Context) {
 		} else if errors.Is(err, messagepkg.ErrEmptyMessage) {
 			c.IndentedJSON(http.StatusBadRequest, rest.ErrorModel{Error: err.Error()})
 		} else {
-			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: ErrDataBase.Error()})
+			c.IndentedJSON(http.StatusInternalServerError, rest.ErrorModel{Error: app.ErrDataBase.Error()})
 		}
 		return
 	}

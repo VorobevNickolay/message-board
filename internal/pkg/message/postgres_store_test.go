@@ -2,7 +2,6 @@ package message
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/stretchr/testify/suite"
@@ -62,6 +61,7 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_FindMessageById() {
 		suite.Require().NotEmpty(m1)
 		actualMessage, err := suite.store.FindMessageByID(suite.ctx, m.ID)
 		suite.Require().NoError(err)
+		m.CreatedAt = actualMessage.CreatedAt
 		suite.Equal(m, actualMessage)
 	})
 	suite.Run("should return errMessageNotFound", func() {
@@ -103,7 +103,8 @@ func (suite *postgresStoreTestSuite) TestPostgresStore_GetMessages() {
 		suite.Require().NotEmpty(m1)
 		messages, err := suite.store.GetMessages(suite.ctx)
 		suite.Require().NoError(err)
-		fmt.Println(messages)
+		m.CreatedAt = messages[0].CreatedAt
+		m1.CreatedAt = messages[1].CreatedAt
 		suite.Equal(m, *messages[0])
 		suite.Equal(m1, *messages[1])
 	})

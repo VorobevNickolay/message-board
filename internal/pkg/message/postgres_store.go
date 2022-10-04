@@ -19,13 +19,11 @@ func NewPostgresStore(pool *pgxpool.Pool) store {
 	return &postgresStore{pool}
 }
 
-//todo: refactor selectMessages
-
 var selectMessages = "SELECT id,userId, text,created_at FROM messages "
 
 func scanMessage(row pgx.Row) (Message, error) {
 	var m Message
-	err := row.Scan(&m.ID, &m.UserID, &m.Text)
+	err := row.Scan(&m.ID, &m.UserID, &m.Text, &m.CreatedAt)
 	if err != nil {
 		return Message{}, err
 	}
@@ -93,7 +91,7 @@ func (s *postgresStore) GetMessages(ctx context.Context) ([]*Message, error) {
 	return messages, nil
 }
 func (s *postgresStore) UpdateMessage(ctx context.Context, message Message) (Message, error) {
-	sql := "UPDATE messages SET text = $1 WHERE id = $2 returning id, userid, text"
+	sql := "UPDATE messages SET text = $1 WHERE id = $2 returning id, userid, text,created_at"
 	row := s.pool.QueryRow(ctx, sql, message.Text, message.ID)
 	message, err := scanMessage(row)
 	if err != nil {
